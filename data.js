@@ -57,6 +57,117 @@ const RAW_SALES_DATA = [
     { raw_cd: "M-1010", raw_nm: "BREEZE PANTHENOL", raw_ratio: 0.005, mitem_code: "P-2010", mitem_name: "수딩 로션 120ML", category: "FERT", forml_code: "11S1302", forml_name: "선로션(스킨케어)", customer_code: "C-3110", customer_name: "브리즈코", base_time: "2025-08-01", total_revenue: 10600000.0, product_sales_revenue: 10600000.0, net_revenue: 4600000.0, product_name: "수딩 로션" }
 ];
 
+// 샘플 데이터 확장 (기간 범위 유지, 기간별 +50행)
+const EXTRA_BASE_TIMES = [
+    "2024-01-01",
+    "2024-02-01",
+    "2024-03-01",
+    "2024-04-01",
+    "2024-05-01",
+    "2024-06-01",
+    "2024-07-01",
+    "2024-09-01",
+    "2024-11-01",
+    "2024-12-01",
+    "2025-07-01",
+    "2025-08-01",
+    "2025-09-01",
+    "2025-10-01",
+    "2025-11-01",
+    "2025-12-01"
+];
+
+const MATERIAL_POOL = [
+    { raw_cd: "M-1001", raw_nm: "AURORA PEPTIDE", raw_ratio: 0.002 },
+    { raw_cd: "M-1002", raw_nm: "SOLAR BIOME", raw_ratio: 0.015 },
+    { raw_cd: "M-1003", raw_nm: "RIVER CICA", raw_ratio: 0.008 },
+    { raw_cd: "M-1004", raw_nm: "CLOUD COLLAGEN", raw_ratio: 0.02 },
+    { raw_cd: "M-1005", raw_nm: "NOVA CERAMIDE", raw_ratio: 0.004 },
+    { raw_cd: "M-1006", raw_nm: "FOREST PROBIOME", raw_ratio: 0.003 },
+    { raw_cd: "M-1007", raw_nm: "POLAR HYALURON", raw_ratio: 0.007 },
+    { raw_cd: "M-1008", raw_nm: "SPARK VIT-C", raw_ratio: 0.001 },
+    { raw_cd: "M-1009", raw_nm: "TWILIGHT NIACIN", raw_ratio: 0.006 },
+    { raw_cd: "M-1010", raw_nm: "BREEZE PANTHENOL", raw_ratio: 0.005 }
+];
+
+const CUSTOMER_POOL = [
+    { customer_code: "C-3101", customer_name: "루미너스코" },
+    { customer_code: "C-3102", customer_name: "소프트랩" },
+    { customer_code: "C-3103", customer_name: "리버뷰" },
+    { customer_code: "C-3104", customer_name: "스카이메드" },
+    { customer_code: "C-3105", customer_name: "노바케어" },
+    { customer_code: "C-3106", customer_name: "포레스트랩" },
+    { customer_code: "C-3107", customer_name: "폴라뷰티" },
+    { customer_code: "C-3108", customer_name: "스파크랩" },
+    { customer_code: "C-3109", customer_name: "트와이라이트" },
+    { customer_code: "C-3110", customer_name: "브리즈코" },
+    // 추가 고객 +5
+    { customer_code: "C-3111", customer_name: "오로라웍스" },
+    { customer_code: "C-3112", customer_name: "벨벳코" },
+    { customer_code: "C-3113", customer_name: "코즈모텍" },
+    { customer_code: "C-3114", customer_name: "네오스킨" },
+    { customer_code: "C-3115", customer_name: "루나랩" }
+];
+
+const PRODUCT_POOL = [
+    { mitem_code: "P-2001", mitem_name: "라이트닝 세럼 30ML", product_name: "라이트닝 세럼", category: "FERT", forml_code: "11S0703", forml_name: "앰플" },
+    { mitem_code: "P-2002", mitem_name: "모이스처 크림 50ML", product_name: "모이스처 크림", category: "FERT", forml_code: "11S0301", forml_name: "크림" },
+    { mitem_code: "P-2003", mitem_name: "시카 젤 80ML", product_name: "시카 젤", category: "FERT", forml_code: "11S0401", forml_name: "젤" },
+    { mitem_code: "P-2004", mitem_name: "클라우드 마스크 5매", product_name: "클라우드 마스크", category: "FERT", forml_code: "11S1004", forml_name: "마스크시트" },
+    { mitem_code: "P-2005", mitem_name: "나이트 리페어 크림 60ML", product_name: "나이트 리페어 크림", category: "FERT", forml_code: "11S0301", forml_name: "크림" },
+    { mitem_code: "P-2006", mitem_name: "리프레시 토너 200ML", product_name: "리프레시 토너", category: "FERT", forml_code: "11S1009", forml_name: "마스크 패드" },
+    { mitem_code: "P-2007", mitem_name: "하이드라 수분 에센스 50ML", product_name: "하이드라 수분 에센스", category: "FERT", forml_code: "11S0701", forml_name: "에센스" },
+    { mitem_code: "P-2008", mitem_name: "브라이트 필링 토너 150ML", product_name: "브라이트 필링 토너", category: "FERT", forml_code: "11S0101", forml_name: "토너" },
+    { mitem_code: "P-2009", mitem_name: "톤업 선스크린 50ML", product_name: "톤업 선스크린", category: "FERT", forml_code: "11S1301", forml_name: "선크림(스킨케어)" },
+    { mitem_code: "P-2010", mitem_name: "수딩 로션 120ML", product_name: "수딩 로션", category: "FERT", forml_code: "11S1302", forml_name: "선로션(스킨케어)" },
+    // 추가 제품 +5
+    { mitem_code: "P-2011", mitem_name: "글로우 에센스 45ML", product_name: "글로우 에센스", category: "FERT", forml_code: "11S0701", forml_name: "에센스" },
+    { mitem_code: "P-2012", mitem_name: "리바이탈 크림 50ML", product_name: "리바이탈 크림", category: "FERT", forml_code: "11S0301", forml_name: "크림" },
+    { mitem_code: "P-2013", mitem_name: "캄 다운 젤 70ML", product_name: "캄 다운 젤", category: "FERT", forml_code: "11S0401", forml_name: "젤" },
+    { mitem_code: "P-2014", mitem_name: "모이스트 미스트 120ML", product_name: "모이스트 미스트", category: "FERT", forml_code: "11S0102", forml_name: "미스트" },
+    { mitem_code: "P-2015", mitem_name: "리커버 마스크 5매", product_name: "리커버 마스크", category: "FERT", forml_code: "11S1004", forml_name: "마스크시트" }
+];
+
+const GENERATED_ROWS = [];
+let seed = 42;
+function rand() {
+    seed = (seed * 9301 + 49297) % 233280;
+    return seed / 233280;
+}
+
+EXTRA_BASE_TIMES.forEach((baseTime, monthIndex) => {
+    for (let i = 0; i < 50; i += 1) {
+        const material = MATERIAL_POOL[(i + monthIndex) % MATERIAL_POOL.length];
+        const product = PRODUCT_POOL[(i * 3 + monthIndex) % PRODUCT_POOL.length];
+        const customer = CUSTOMER_POOL[(i * 7 + monthIndex) % CUSTOMER_POOL.length];
+
+        const salesBase = 5000000 + Math.floor(rand() * 18000000);
+        const sales = Math.round(salesBase / 1000) * 1000;
+        const margin = 0.35 + rand() * 0.25;
+        const net = Math.round(sales * margin / 1000) * 1000;
+
+        GENERATED_ROWS.push({
+            raw_cd: material.raw_cd,
+            raw_nm: material.raw_nm,
+            raw_ratio: material.raw_ratio,
+            mitem_code: product.mitem_code,
+            mitem_name: product.mitem_name,
+            category: product.category,
+            forml_code: product.forml_code,
+            forml_name: product.forml_name,
+            customer_code: customer.customer_code,
+            customer_name: customer.customer_name,
+            base_time: baseTime,
+            total_revenue: sales,
+            product_sales_revenue: sales,
+            net_revenue: net,
+            product_name: product.product_name
+        });
+    }
+});
+
+RAW_SALES_DATA.push(...GENERATED_ROWS);
+
 // 집계 함수들
 
 // 숫자 포맷팅

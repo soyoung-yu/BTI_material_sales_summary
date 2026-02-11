@@ -802,7 +802,6 @@
         const endDateField = document.getElementById('endDateField');
         const yearSelect = document.getElementById('yearSelect');
         const periodSelect = document.getElementById('periodSelect');
-        const quickSelectArea = document.getElementById('quickSelectArea');
         const sheetTags = document.getElementById('sheetTags');
         const downloadBtn = document.getElementById('downloadBtn');
 
@@ -828,8 +827,11 @@
                 else endDateInput.click();
             });
 
-            // Quick select area to switch mode
-            quickSelectArea.addEventListener('click', () => {
+            // Quick select: focus/click to switch mode
+            yearSelect.addEventListener('focus', () => {
+                setInputMode('quick', { skipReset: true });
+            });
+            periodSelect.addEventListener('focus', () => {
                 setInputMode('quick', { skipReset: true });
             });
 

@@ -157,13 +157,44 @@
             transition: border-color 0.2s;
         }
 
+        .date-field {
+            cursor: pointer;
+        }
+
+        .date-field input[type="date"] {
+            cursor: pointer;
+        }
+
         .form-group input:focus,
         .form-group select:focus {
             outline: none;
             border-color: #3182ce;
         }
 
-        /* Checkbox Grid */
+        /* Checkbox Groups */
+        .checkbox-groups {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .checkbox-group {
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 16px;
+            background: #f8fafc;
+        }
+
+        .checkbox-group-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #475569;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
         .checkbox-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -537,23 +568,30 @@
                 기간 선택
             </h3>
             <div class="form-row">
-                <div class="form-group">
+                <div class="form-group date-field" id="startDateField">
                     <label>시작일</label>
                     <input type="date" id="startDate" value="2025-01-01">
                 </div>
-                <div class="form-group">
+                <div class="form-group date-field" id="endDateField">
                     <label>종료일</label>
                     <input type="date" id="endDate" value="2025-03-31">
                 </div>
                 <div class="form-group">
                     <label>빠른 선택</label>
-                    <select id="quickSelect">
-                        <option value="">직접 입력</option>
-                        <option value="2025Q1" selected>2025년 1분기</option>
-                        <option value="2025H1">2025년 상반기</option>
-                        <option value="2024Q4">2024년 4분기</option>
-                        <option value="2024H2">2024년 하반기</option>
-                    </select>
+                    <div class="form-row">
+                        <select id="yearSelect">
+                            <option value="">연도 선택</option>
+                        </select>
+                        <select id="periodSelect">
+                            <option value="">반기/분기 선택</option>
+                            <option value="H1">상반기</option>
+                            <option value="H2">하반기</option>
+                            <option value="Q1">1분기</option>
+                            <option value="Q2">2분기</option>
+                            <option value="Q3">3분기</option>
+                            <option value="Q4">4분기</option>
+                        </select>
+                    </div>
                 </div>
             </div>
         </div>
@@ -564,68 +602,91 @@
                 <span class="step">2</span>
                 집계 방식 선택
             </h3>
-            <div class="checkbox-grid">
-                <div class="checkbox-item disabled checked">
-                    <input type="checkbox" checked disabled data-sheet="Raw">
-                    <div>
-                        <div class="label-text">Raw 데이터</div>
-                        <div class="label-desc">원본 데이터 (기본 포함)</div>
+            <div class="checkbox-groups">
+                <div class="checkbox-group">
+                    <div class="checkbox-group-title">기본 데이터</div>
+                    <div class="checkbox-grid">
+                        <div class="checkbox-item disabled checked">
+                            <input type="checkbox" checked disabled data-sheet="Raw">
+                            <div>
+                                <div class="label-text">Raw 데이터</div>
+                                <div class="label-desc">원본 데이터 (기본 포함)</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="checkbox-item checked" data-key="total">
-                    <input type="checkbox" checked data-sheet="Summary_총매출">
-                    <div>
-                        <div class="label-text">총 매출</div>
-                        <div class="label-desc">기간 내 전체 매출 합계</div>
+
+                <div class="checkbox-group">
+                    <div class="checkbox-group-title">전체 요약</div>
+                    <div class="checkbox-grid">
+                        <div class="checkbox-item checked" data-key="total">
+                            <input type="checkbox" checked data-sheet="Summary_총매출">
+                            <div>
+                                <div class="label-text">총 매출</div>
+                                <div class="label-desc">기간 내 전체 매출 합계</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="checkbox-item checked" data-key="monthly">
-                    <input type="checkbox" checked data-sheet="Summary_월별">
-                    <div>
-                        <div class="label-text">월별</div>
-                        <div class="label-desc">월 단위 매출 집계</div>
+
+                <div class="checkbox-group">
+                    <div class="checkbox-group-title">기간 집계</div>
+                    <div class="checkbox-grid">
+                        <div class="checkbox-item checked" data-key="monthly">
+                            <input type="checkbox" checked data-sheet="Summary_월별">
+                            <div>
+                                <div class="label-text">월별</div>
+                                <div class="label-desc">월 단위 매출 집계</div>
+                            </div>
+                        </div>
+                        <div class="checkbox-item" data-key="quarterly">
+                            <input type="checkbox" data-sheet="Summary_분기별">
+                            <div>
+                                <div class="label-text">분기별</div>
+                                <div class="label-desc">분기 단위 매출 집계</div>
+                            </div>
+                        </div>
+                        <div class="checkbox-item" data-key="half">
+                            <input type="checkbox" data-sheet="Summary_반기별">
+                            <div>
+                                <div class="label-text">반기별</div>
+                                <div class="label-desc">반기 단위 매출 집계</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="checkbox-item" data-key="quarterly">
-                    <input type="checkbox" data-sheet="Summary_분기별">
-                    <div>
-                        <div class="label-text">분기별</div>
-                        <div class="label-desc">분기 단위 매출 집계</div>
-                    </div>
-                </div>
-                <div class="checkbox-item" data-key="half">
-                    <input type="checkbox" data-sheet="Summary_반기별">
-                    <div>
-                        <div class="label-text">반기별</div>
-                        <div class="label-desc">반기 단위 매출 집계</div>
-                    </div>
-                </div>
-                <div class="checkbox-item checked" data-key="material">
-                    <input type="checkbox" checked data-sheet="Summary_소재별">
-                    <div>
-                        <div class="label-text">소재별</div>
-                        <div class="label-desc">개발 소재별 매출 집계</div>
-                    </div>
-                </div>
-                <div class="checkbox-item" data-key="product">
-                    <input type="checkbox" data-sheet="Summary_제품라인별">
-                    <div>
-                        <div class="label-text">제품라인별</div>
-                        <div class="label-desc">제품 라인별 매출 집계</div>
-                    </div>
-                </div>
-                <div class="checkbox-item" data-key="customer">
-                    <input type="checkbox" data-sheet="Summary_고객별">
-                    <div>
-                        <div class="label-text">고객별</div>
-                        <div class="label-desc">고객사별 매출 집계</div>
-                    </div>
-                </div>
-                <div class="checkbox-item" data-key="formulation">
-                    <input type="checkbox" data-sheet="Summary_제형별">
-                    <div>
-                        <div class="label-text">제형별</div>
-                        <div class="label-desc">제형 유형별 매출 집계</div>
+
+                <div class="checkbox-group">
+                    <div class="checkbox-group-title">차원별 집계</div>
+                    <div class="checkbox-grid">
+                        <div class="checkbox-item checked" data-key="material">
+                            <input type="checkbox" checked data-sheet="Summary_소재별">
+                            <div>
+                                <div class="label-text">소재별</div>
+                                <div class="label-desc">개발 소재별 매출 집계</div>
+                            </div>
+                        </div>
+                        <div class="checkbox-item" data-key="product">
+                            <input type="checkbox" data-sheet="Summary_제품라인별">
+                            <div>
+                                <div class="label-text">제품라인별</div>
+                                <div class="label-desc">제품 라인별 매출 집계</div>
+                            </div>
+                        </div>
+                        <div class="checkbox-item" data-key="customer">
+                            <input type="checkbox" data-sheet="Summary_고객별">
+                            <div>
+                                <div class="label-text">고객별</div>
+                                <div class="label-desc">고객사별 매출 집계</div>
+                            </div>
+                        </div>
+                        <div class="checkbox-item" data-key="formulation">
+                            <input type="checkbox" data-sheet="Summary_제형별">
+                            <div>
+                                <div class="label-text">제형별</div>
+                                <div class="label-desc">제형 유형별 매출 집계</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -710,43 +771,54 @@
         // DOM Elements
         const startDateInput = document.getElementById('startDate');
         const endDateInput = document.getElementById('endDate');
-        const quickSelect = document.getElementById('quickSelect');
+        const yearSelect = document.getElementById('yearSelect');
+        const periodSelect = document.getElementById('periodSelect');
         const sheetTags = document.getElementById('sheetTags');
         const downloadBtn = document.getElementById('downloadBtn');
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
+            initQuickSelects();
             updateSheetTags();
             setupEventListeners();
         });
 
         function setupEventListeners() {
-            // Quick select
-            quickSelect.addEventListener('change', (e) => {
-                const val = e.target.value;
-                if (val === '2025Q1') {
-                    startDateInput.value = '2025-01-01';
-                    endDateInput.value = '2025-03-31';
-                } else if (val === '2025H1') {
-                    startDateInput.value = '2025-01-01';
-                    endDateInput.value = '2025-06-30';
-                } else if (val === '2024Q4') {
-                    startDateInput.value = '2024-10-01';
-                    endDateInput.value = '2024-12-31';
-                } else if (val === '2024H2') {
-                    startDateInput.value = '2024-07-01';
-                    endDateInput.value = '2024-12-31';
+            // Date field click to open picker
+            document.getElementById('startDateField').addEventListener('click', (e) => {
+                if (e.target.tagName !== 'INPUT') {
+                    startDateInput.focus();
+                    if (startDateInput.showPicker) startDateInput.showPicker();
                 }
+            });
+            document.getElementById('endDateField').addEventListener('click', (e) => {
+                if (e.target.tagName !== 'INPUT') {
+                    endDateInput.focus();
+                    if (endDateInput.showPicker) endDateInput.showPicker();
+                }
+            });
+
+            // Quick select: year
+            yearSelect.addEventListener('change', () => {
+                applyQuickSelection();
+                resetPreview();
+            });
+
+            // Quick select: period
+            periodSelect.addEventListener('change', () => {
+                applyQuickSelection();
                 resetPreview();
             });
 
             // Date inputs
             startDateInput.addEventListener('change', () => {
-                quickSelect.value = '';
+                yearSelect.value = '';
+                periodSelect.value = '';
                 resetPreview();
             });
             endDateInput.addEventListener('change', () => {
-                quickSelect.value = '';
+                yearSelect.value = '';
+                periodSelect.value = '';
                 resetPreview();
             });
 
@@ -768,6 +840,61 @@
 
             // Download button
             downloadBtn.addEventListener('click', downloadExcel);
+        }
+
+        function initQuickSelects() {
+            const currentYear = new Date().getFullYear();
+            const years = [currentYear, currentYear - 1, currentYear - 2];
+
+            yearSelect.innerHTML = ['<option value=\"\">연도 선택</option>']
+                .concat(years.map(y => `<option value=\"${y}\">${y}년</option>`))
+                .join('');
+
+            yearSelect.value = String(currentYear);
+            periodSelect.value = '';
+            applyQuickSelection();
+        }
+
+        function applyQuickSelection() {
+            const year = yearSelect.value;
+            const period = periodSelect.value;
+
+            if (!year) return;
+
+            if (!period) {
+                startDateInput.value = `${year}-01-01`;
+                endDateInput.value = `${year}-12-31`;
+                return;
+            }
+
+            switch (period) {
+                case 'H1':
+                    startDateInput.value = `${year}-01-01`;
+                    endDateInput.value = `${year}-06-30`;
+                    break;
+                case 'H2':
+                    startDateInput.value = `${year}-07-01`;
+                    endDateInput.value = `${year}-12-31`;
+                    break;
+                case 'Q1':
+                    startDateInput.value = `${year}-01-01`;
+                    endDateInput.value = `${year}-03-31`;
+                    break;
+                case 'Q2':
+                    startDateInput.value = `${year}-04-01`;
+                    endDateInput.value = `${year}-06-30`;
+                    break;
+                case 'Q3':
+                    startDateInput.value = `${year}-07-01`;
+                    endDateInput.value = `${year}-09-30`;
+                    break;
+                case 'Q4':
+                    startDateInput.value = `${year}-10-01`;
+                    endDateInput.value = `${year}-12-31`;
+                    break;
+                default:
+                    break;
+            }
         }
 
         function resetPreview() {

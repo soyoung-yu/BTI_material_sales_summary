@@ -798,16 +798,20 @@
 
         function setupEventListeners() {
             // Date field click to open picker
-            document.getElementById('startDateField').addEventListener('click', (e) => {
-                if (e.target.tagName !== 'INPUT') {
-                    startDateInput.focus();
-                    if (startDateInput.showPicker) startDateInput.showPicker();
+            document.getElementById('startDateField').addEventListener('click', () => {
+                startDateInput.focus();
+                if (startDateInput.showPicker) {
+                    startDateInput.showPicker();
+                } else {
+                    startDateInput.click();
                 }
             });
-            document.getElementById('endDateField').addEventListener('click', (e) => {
-                if (e.target.tagName !== 'INPUT') {
-                    endDateInput.focus();
-                    if (endDateInput.showPicker) endDateInput.showPicker();
+            document.getElementById('endDateField').addEventListener('click', () => {
+                endDateInput.focus();
+                if (endDateInput.showPicker) {
+                    endDateInput.showPicker();
+                } else {
+                    endDateInput.click();
                 }
             });
 

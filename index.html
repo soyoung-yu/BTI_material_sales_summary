@@ -173,23 +173,23 @@
 
         /* Checkbox Groups */
         .checkbox-groups {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
         }
 
         .checkbox-group {
             border: 1px solid #e2e8f0;
             border-radius: 10px;
-            padding: 16px;
+            padding: 12px;
             background: #f8fafc;
         }
 
         .checkbox-group-title {
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 600;
             color: #475569;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
             display: flex;
             align-items: center;
             gap: 8px;
@@ -199,6 +199,12 @@
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 12px;
+        }
+
+        @media (max-width: 1024px) {
+            .checkbox-groups {
+                grid-template-columns: 1fr;
+            }
         }
 
         .checkbox-item {

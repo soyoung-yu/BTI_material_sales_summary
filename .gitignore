@@ -1,1 +1,8 @@
+# 분석파일
 *.ipynb
+
+# 데이터
+*.xlsx
+*.csv
+# sample 파일만 예외 허용
+!sample_df.csv

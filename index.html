@@ -165,6 +165,20 @@
             cursor: pointer;
         }
 
+        .date-field.disabled input[type="date"] {
+            background: #f1f5f9;
+            color: #94a3b8;
+            border-color: #e2e8f0;
+            cursor: not-allowed;
+        }
+
+        .form-group select:disabled {
+            background: #f1f5f9;
+            color: #94a3b8;
+            border-color: #e2e8f0;
+            cursor: not-allowed;
+        }
+
         .form-group input:focus,
         .form-group select:focus {
             outline: none;
@@ -581,15 +595,7 @@
                 기간 선택
             </h3>
             <div class="form-row">
-                <div class="form-group date-field" id="startDateField">
-                    <label>시작일</label>
-                    <input type="date" id="startDate" value="2025-01-01">
-                </div>
-                <div class="form-group date-field" id="endDateField">
-                    <label>종료일</label>
-                    <input type="date" id="endDate" value="2025-03-31">
-                </div>
-                <div class="form-group">
+                <div class="form-group" id="quickSelectArea">
                     <label>빠른 선택</label>
                     <div class="form-row">
                         <select id="yearSelect">
@@ -605,6 +611,14 @@
                             <option value="Q4">4분기</option>
                         </select>
                     </div>
+                </div>
+                <div class="form-group date-field" id="startDateField">
+                    <label>시작일</label>
+                    <input type="date" id="startDate" value="2025-01-01">
+                </div>
+                <div class="form-group date-field" id="endDateField">
+                    <label>종료일</label>
+                    <input type="date" id="endDate" value="2025-03-31">
                 </div>
             </div>
         </div>
@@ -784,8 +798,11 @@
         // DOM Elements
         const startDateInput = document.getElementById('startDate');
         const endDateInput = document.getElementById('endDate');
+        const startDateField = document.getElementById('startDateField');
+        const endDateField = document.getElementById('endDateField');
         const yearSelect = document.getElementById('yearSelect');
         const periodSelect = document.getElementById('periodSelect');
+        const quickSelectArea = document.getElementById('quickSelectArea');
         const sheetTags = document.getElementById('sheetTags');
         const downloadBtn = document.getElementById('downloadBtn');
 
@@ -798,44 +815,45 @@
 
         function setupEventListeners() {
             // Date field click to open picker
-            document.getElementById('startDateField').addEventListener('click', () => {
+            startDateField.addEventListener('click', () => {
+                setInputMode('manual');
                 startDateInput.focus();
-                if (startDateInput.showPicker) {
-                    startDateInput.showPicker();
-                } else {
-                    startDateInput.click();
-                }
+                if (startDateInput.showPicker) startDateInput.showPicker();
+                else startDateInput.click();
             });
-            document.getElementById('endDateField').addEventListener('click', () => {
+            endDateField.addEventListener('click', () => {
+                setInputMode('manual');
                 endDateInput.focus();
-                if (endDateInput.showPicker) {
-                    endDateInput.showPicker();
-                } else {
-                    endDateInput.click();
-                }
+                if (endDateInput.showPicker) endDateInput.showPicker();
+                else endDateInput.click();
+            });
+
+            // Quick select area to switch mode
+            quickSelectArea.addEventListener('click', () => {
+                setInputMode('quick', { skipReset: true });
             });
 
             // Quick select: year
             yearSelect.addEventListener('change', () => {
+                setInputMode('quick');
                 applyQuickSelection();
                 resetPreview();
             });
 
             // Quick select: period
             periodSelect.addEventListener('change', () => {
+                setInputMode('quick');
                 applyQuickSelection();
                 resetPreview();
             });
 
             // Date inputs
             startDateInput.addEventListener('change', () => {
-                yearSelect.value = '';
-                periodSelect.value = '';
+                setInputMode('manual');
                 resetPreview();
             });
             endDateInput.addEventListener('change', () => {
-                yearSelect.value = '';
-                periodSelect.value = '';
+                setInputMode('manual');
                 resetPreview();
             });
 
@@ -869,7 +887,41 @@
 
             yearSelect.value = String(currentYear);
             periodSelect.value = '';
+            setInputMode('quick', { skipReset: true });
             applyQuickSelection();
+        }
+
+        function setInputMode(mode, opts = {}) {
+            const skipReset = opts.skipReset === true;
+
+            if (mode === 'quick') {
+                yearSelect.disabled = false;
+                periodSelect.disabled = false;
+                startDateInput.disabled = true;
+                endDateInput.disabled = true;
+                startDateField.classList.add('disabled');
+                endDateField.classList.add('disabled');
+
+                if (!skipReset) {
+                    if (!yearSelect.value) {
+                        yearSelect.value = String(new Date().getFullYear());
+                    }
+                    if (!periodSelect.value) {
+                        startDateInput.value = '';
+                        endDateInput.value = '';
+                    }
+                }
+            } else {
+                startDateInput.disabled = false;
+                endDateInput.disabled = false;
+                startDateField.classList.remove('disabled');
+                endDateField.classList.remove('disabled');
+
+                yearSelect.value = '';
+                periodSelect.value = '';
+                yearSelect.disabled = true;
+                periodSelect.disabled = true;
+            }
         }
 
         function applyQuickSelection() {

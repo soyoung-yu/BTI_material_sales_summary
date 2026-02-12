@@ -1,15 +1,15 @@
 // 소재 데이터 (나중에 내부 DB에서 관리 예정)
 const MATERIALS = [
-    { raw_cd: "M-1001", raw_nm: "AURORA PEPTIDE", mmsta: "NO", researcher: "홍길동", created: "2025-10-01" },
-    { raw_cd: "M-1002", raw_nm: "SOLAR BIOME", mmsta: "YES", researcher: "김연아", created: "2025-10-10" },
-    { raw_cd: "M-1003", raw_nm: "RIVER CICA", mmsta: "NO", researcher: "박지성", created: "2025-11-02" },
-    { raw_cd: "M-1004", raw_nm: "CLOUD COLLAGEN", mmsta: "NO", researcher: "이순신", created: "2025-11-12" },
-    { raw_cd: "M-1005", raw_nm: "NOVA CERAMIDE", mmsta: "YES", researcher: "유관순", created: "2025-11-20" },
-    { raw_cd: "M-1006", raw_nm: "FOREST PROBIOME", mmsta: "NO", researcher: "장영실", created: "2025-12-01" },
-    { raw_cd: "M-1007", raw_nm: "POLAR HYALURON", mmsta: "NO", researcher: "신사임당", created: "2025-12-12" },
-    { raw_cd: "M-1008", raw_nm: "SPARK VIT-C", mmsta: "YES", researcher: "세종", created: "2025-12-18" },
-    { raw_cd: "M-1009", raw_nm: "TWILIGHT NIACIN", mmsta: "NO", researcher: "허준", created: "2026-01-05" },
-    { raw_cd: "M-1010", raw_nm: "BREEZE PANTHENOL", mmsta: "NO", researcher: "윤봉길", created: "2026-01-15" }
+    { raw_cd: "M-1001", raw_nm: "AURORA PEPTIDE", mmsta: "NO", researcher: "홍길동", created: "2025-10-01", approval_status: "완료" },
+    { raw_cd: "M-1002", raw_nm: "SOLAR BIOME", mmsta: "YES", researcher: "김연아", created: "2025-10-10", approval_status: "완료" },
+    { raw_cd: "M-1003", raw_nm: "RIVER CICA", mmsta: "NO", researcher: "박지성", created: "2025-11-02", approval_status: "완료" },
+    { raw_cd: "M-1004", raw_nm: "CLOUD COLLAGEN", mmsta: "NO", researcher: "이순신", created: "2025-11-12", approval_status: "완료" },
+    { raw_cd: "M-1005", raw_nm: "NOVA CERAMIDE", mmsta: "YES", researcher: "유관순", created: "2025-11-20", approval_status: "완료" },
+    { raw_cd: "M-1006", raw_nm: "FOREST PROBIOME", mmsta: "NO", researcher: "장영실", created: "2025-12-01", approval_status: "완료" },
+    { raw_cd: "M-1007", raw_nm: "POLAR HYALURON", mmsta: "NO", researcher: "신사임당", created: "2025-12-12", approval_status: "완료" },
+    { raw_cd: "M-1008", raw_nm: "SPARK VIT-C", mmsta: "YES", researcher: "세종", created: "2025-12-18", approval_status: "완료" },
+    { raw_cd: "M-1009", raw_nm: "TWILIGHT NIACIN", mmsta: "NO", researcher: "허준", created: "2026-01-05", approval_status: "완료" },
+    { raw_cd: "M-1010", raw_nm: "BREEZE PANTHENOL", mmsta: "NO", researcher: "윤봉길", created: "2026-01-15", approval_status: "완료" }
 ];
 
 // 샘플 데이터 - sample_df.csv에서 자동 생성

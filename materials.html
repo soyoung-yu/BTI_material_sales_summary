@@ -215,6 +215,11 @@
             background: #fecaca;
         }
 
+        .btn-group {
+            display: flex;
+            gap: 8px;
+        }
+
         .btn svg {
             width: 16px;
             height: 16px;
@@ -528,13 +533,23 @@
                 <h2 class="page-title">소재 관리</h2>
                 <p class="page-desc">팀에서 개발한 소재 목록을 관리합니다.</p>
             </div>
-            <button class="btn btn-primary" onclick="openAddModal()">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                </svg>
-                소재 추가
-            </button>
+            <div class="btn-group">
+                <button class="btn btn-secondary" onclick="openBulkUploadModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    엑셀로 한번에 등록하기
+                </button>
+                <button class="btn btn-primary" onclick="openAddModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    소재 추가 신청
+                </button>
+            </div>
         </div>
 
         <div class="card">
@@ -551,11 +566,6 @@
                         </svg>
                         <input type="text" id="searchInput" placeholder="소재코드 또는 소재명 검색">
                     </div>
-                    <select class="filter-select" id="statusFilter">
-                        <option value="">전체 상태</option>
-                        <option value="NO">사용중 (NO)</option>
-                        <option value="Z2">단종 (Z2)</option>
-                    </select>
                 </div>
             </div>
 
@@ -565,7 +575,7 @@
                         <tr>
                             <th>소재코드</th>
                             <th>소재명</th>
-                            <th>상태</th>
+                            <th>등록상태</th>
                             <th>담당자</th>
                             <th>등록일</th>
                             <th></th>
@@ -590,7 +600,7 @@
     <div class="modal-overlay" id="modal">
         <div class="modal">
             <div class="modal-header">
-                <h3 class="modal-title" id="modalTitle">소재 추가</h3>
+                <h3 class="modal-title" id="modalTitle">소재 추가 신청</h3>
                 <button class="modal-close" onclick="closeModal()">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -609,13 +619,6 @@
                     <input type="text" id="inputRawNm" placeholder="예: REJUVIOME-R">
                 </div>
                 <div class="form-group">
-                    <label>상태</label>
-                    <select id="inputMmsta">
-                        <option value="NO">사용중 (NO)</option>
-                        <option value="Z2">단종 (Z2)</option>
-                    </select>
-                </div>
-                <div class="form-group">
                     <label>담당자</label>
                     <select id="inputResearcher">
                         <option>허영목</option>
@@ -628,7 +631,7 @@
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeModal()">취소</button>
-                <button class="btn btn-primary" id="saveBtn" onclick="saveMaterial()">추가</button>
+                <button class="btn btn-primary" id="saveBtn" onclick="saveMaterial()">신청</button>
             </div>
         </div>
     </div>
@@ -646,13 +649,53 @@
                 </button>
             </div>
             <div class="modal-body">
-                <p>정말로 <strong id="deleteMaterialName"></strong> 소재를 삭제하시겠습니까?</p>
-                <p style="color: #64748b; font-size: 14px; margin-top: 8px;">이 작업은 되돌릴 수 없습니다.</p>
+                <p>
+                    <span id="deleteMessagePrefix">정말로</span>
+                    <strong id="deleteMaterialName"></strong>
+                    <span id="deleteMessageSuffix">소재를 삭제하시겠습니까?</span>
+                </p>
                 <input type="hidden" id="deleteIndex" value="-1">
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeDeleteModal()">취소</button>
-                <button class="btn btn-danger" onclick="confirmDelete()">삭제</button>
+                <button class="btn btn-danger" id="deleteConfirmBtn" onclick="confirmDelete()">삭제요청</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Upload Modal -->
+    <div class="modal-overlay" id="bulkUploadModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">엑셀로 한번에 등록하기</h3>
+                <button class="modal-close" onclick="closeBulkUploadModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div style="font-size: 13px; color: #64748b; line-height: 1.6; margin-bottom: 16px;">
+                    엑셀 컬럼명을 아래와 동일하게 맞춰주세요. (필수 컬럼은 반드시 포함)<br>
+                    필수: <strong>compid, 원료코드, 원료명, 담당자사번, 담당자이름</strong><br>
+                    선택: <strong>상태</strong> (빈 값이면 자동으로 <strong>-</strong> 처리)
+                </div>
+                <div class="form-group">
+                    <label>등록 방식</label>
+                    <select id="bulkMode">
+                        <option value="append">기존 소재 유지하고 추가하기</option>
+                        <option value="replace">기존에 등록된 소재 모두 없애기</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>엑셀 파일 업로드</label>
+                    <input type="file" id="bulkFileInput" accept=".xlsx,.xls">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeBulkUploadModal()">취소</button>
+                <button class="btn btn-primary" onclick="submitBulkUpload()">등록 신청</button>
             </div>
         </div>
     </div>
@@ -665,6 +708,7 @@
         <span id="toastMessage">저장 완료!</span>
     </div>
 
+    <script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="data.js"></script>
     <script>
         // State
@@ -675,7 +719,6 @@
 
         // DOM Elements
         const searchInput = document.getElementById('searchInput');
-        const statusFilter = document.getElementById('statusFilter');
         const materialTableBody = document.getElementById('materialTableBody');
         const materialCount = document.getElementById('materialCount');
         const paginationInfo = document.getElementById('paginationInfo');
@@ -693,21 +736,15 @@
                 filterAndRender();
             });
 
-            statusFilter.addEventListener('change', () => {
-                currentPage = 1;
-                filterAndRender();
-            });
         }
 
         function filterAndRender() {
             const searchTerm = searchInput.value.toLowerCase();
-            const statusValue = statusFilter.value;
 
             filteredMaterials = materials.filter(m => {
                 const matchesSearch = m.raw_cd.toLowerCase().includes(searchTerm) ||
                                       m.raw_nm.toLowerCase().includes(searchTerm);
-                const matchesStatus = !statusValue || m.mmsta === statusValue;
-                return matchesSearch && matchesStatus;
+                return matchesSearch;
             });
 
             materialCount.textContent = `총 ${filteredMaterials.length}개`;
@@ -737,12 +774,12 @@
 
             materialTableBody.innerHTML = pageData.map((m, i) => {
                 const globalIndex = materials.indexOf(m);
-                const statusClass = m.mmsta === 'NO' ? 'status-active' : 'status-discontinued';
+                const approvalClass = m.approval_status === '완료' ? 'status-active' : 'status-inactive';
                 return `
                     <tr>
                         <td class="material-code">${m.raw_cd}</td>
                         <td class="material-name">${m.raw_nm}</td>
-                        <td><span class="status-badge ${statusClass}">${m.mmsta}</span></td>
+                        <td><span class="status-badge ${approvalClass}">${m.approval_status}</span></td>
                         <td class="researcher">${m.researcher}</td>
                         <td>${m.created}</td>
                         <td class="actions">
@@ -800,12 +837,11 @@
 
         // Modal functions
         function openAddModal() {
-            document.getElementById('modalTitle').textContent = '소재 추가';
-            document.getElementById('saveBtn').textContent = '추가';
+            document.getElementById('modalTitle').textContent = '소재 추가 신청';
+            document.getElementById('saveBtn').textContent = '신청';
             document.getElementById('editIndex').value = -1;
             document.getElementById('inputRawCd').value = '';
             document.getElementById('inputRawNm').value = '';
-            document.getElementById('inputMmsta').value = 'NO';
             document.getElementById('inputResearcher').value = '허영목';
             document.getElementById('modal').classList.add('active');
         }
@@ -817,8 +853,14 @@
             document.getElementById('editIndex').value = index;
             document.getElementById('inputRawCd').value = m.raw_cd;
             document.getElementById('inputRawNm').value = m.raw_nm;
-            document.getElementById('inputMmsta').value = m.mmsta;
-            document.getElementById('inputResearcher').value = m.researcher;
+            const researcherSelect = document.getElementById('inputResearcher');
+            if (![...researcherSelect.options].some(opt => opt.value === m.researcher)) {
+                const opt = document.createElement('option');
+                opt.value = m.researcher;
+                opt.textContent = m.researcher;
+                researcherSelect.appendChild(opt);
+            }
+            researcherSelect.value = m.researcher;
             document.getElementById('modal').classList.add('active');
         }
 
@@ -829,7 +871,6 @@
         function saveMaterial() {
             const rawCd = document.getElementById('inputRawCd').value.trim();
             const rawNm = document.getElementById('inputRawNm').value.trim();
-            const mmsta = document.getElementById('inputMmsta').value;
             const researcher = document.getElementById('inputResearcher').value;
             const editIndex = parseInt(document.getElementById('editIndex').value);
 
@@ -845,21 +886,18 @@
                 materials.unshift({
                     raw_cd: rawCd,
                     raw_nm: rawNm,
-                    mmsta: mmsta,
                     researcher: researcher,
-                    created: today
+                    created: today,
+                    approval_status: '등록중'
                 });
-                showToast('소재가 추가되었습니다.');
+                showToast('소재 추가 신청이 접수되었습니다. (관리자 승인 필요)');
             } else {
-                // Edit existing
+                // Edit request (admin approval required)
                 materials[editIndex] = {
                     ...materials[editIndex],
-                    raw_cd: rawCd,
-                    raw_nm: rawNm,
-                    mmsta: mmsta,
-                    researcher: researcher
+                    approval_status: '수정중'
                 };
-                showToast('소재가 수정되었습니다.');
+                showToast('소재 수정 신청이 접수되었습니다. (관리자 승인 필요)');
             }
 
             closeModal();
@@ -869,6 +907,19 @@
         function openDeleteModal(index) {
             document.getElementById('deleteIndex').value = index;
             document.getElementById('deleteMaterialName').textContent = materials[index].raw_nm;
+            const isCompleted = materials[index].approval_status === '완료';
+            const deleteMessagePrefix = document.getElementById('deleteMessagePrefix');
+            const deleteMessageSuffix = document.getElementById('deleteMessageSuffix');
+            const deleteButton = document.getElementById('deleteConfirmBtn');
+            if (isCompleted) {
+                deleteMessagePrefix.textContent = '정말로';
+                deleteMessageSuffix.textContent = '소재를 삭제하시겠습니까?';
+                deleteButton.textContent = '삭제요청';
+            } else {
+                deleteMessagePrefix.textContent = '';
+                deleteMessageSuffix.textContent = '소재의 요청을 삭제하시겠습니까?';
+                deleteButton.textContent = '삭제';
+            }
             document.getElementById('deleteModal').classList.add('active');
         }
 
@@ -876,12 +927,116 @@
             document.getElementById('deleteModal').classList.remove('active');
         }
 
+        function openBulkUploadModal() {
+            document.getElementById('bulkMode').value = 'append';
+            document.getElementById('bulkFileInput').value = '';
+            document.getElementById('bulkUploadModal').classList.add('active');
+        }
+
+        function closeBulkUploadModal() {
+            document.getElementById('bulkUploadModal').classList.remove('active');
+        }
+
+        async function submitBulkUpload() {
+            const fileInput = document.getElementById('bulkFileInput');
+            const file = fileInput.files[0];
+            const mode = document.getElementById('bulkMode').value;
+
+            if (!file) {
+                showToast('엑셀 파일을 선택해주세요.');
+                return;
+            }
+
+            const data = await file.arrayBuffer();
+            const workbook = XLSX.read(data, { type: 'array' });
+            const sheetName = workbook.SheetNames[0];
+            const sheet = workbook.Sheets[sheetName];
+            const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+
+            if (rows.length < 2) {
+                showToast('엑셀에 데이터가 없습니다.');
+                return;
+            }
+
+            const headers = rows[0].map(h => String(h).trim());
+            const headerIndex = Object.fromEntries(headers.map((h, i) => [h, i]));
+            const normalizedHeaderIndex = Object.fromEntries(
+                headers.map((h, i) => [h.toLowerCase(), i])
+            );
+            const requiredHeaders = ['compid', '원료코드', '원료명', '담당자사번', '담당자이름'];
+            const missing = requiredHeaders.filter(h => {
+                if (h === 'compid') return !(h in normalizedHeaderIndex);
+                return !(h in headerIndex);
+            });
+
+            if (missing.length > 0) {
+                showToast('엑셀의 필수 컬럼명을 확인해주세요.');
+                return;
+            }
+
+            const newMaterials = [];
+            const today = new Date().toISOString().split('T')[0];
+
+            for (let i = 1; i < rows.length; i += 1) {
+                const row = rows[i];
+                const compidKey = 'compid';
+                const compidIndex = normalizedHeaderIndex[compidKey];
+                const compid = String(row[compidIndex] ?? '').trim();
+                const rawCd = String(row[headerIndex['원료코드']] ?? '').trim();
+                const rawNm = String(row[headerIndex['원료명']] ?? '').trim();
+                const researcherId = String(row[headerIndex['담당자사번']] ?? '').trim();
+                const researcherName = String(row[headerIndex['담당자이름']] ?? '').trim();
+                const statusValue = headers.includes('상태')
+                    ? String(row[headerIndex['상태']] ?? '').trim() || '-'
+                    : '-';
+
+                if (!compid || !rawCd || !rawNm || !researcherId || !researcherName) {
+                    showToast(`필수값 누락: ${i + 1}행을 확인해주세요.`);
+                    return;
+                }
+
+                newMaterials.push({
+                    compid,
+                    raw_cd: rawCd,
+                    raw_nm: rawNm,
+                    researcher_id: researcherId,
+                    researcher: researcherName,
+                    status: statusValue,
+                    created: today,
+                    approval_status: '등록중'
+                });
+            }
+
+            if (mode === 'replace') {
+                materials = materials.map(m => ({
+                    ...m,
+                    approval_status: '삭제중'
+                }));
+            }
+
+            materials = [...newMaterials, ...materials];
+            closeBulkUploadModal();
+            filterAndRender();
+            showToast(`엑셀 등록 요청 1건 접수 (총 ${newMaterials.length}건)`);
+        }
+
         function confirmDelete() {
             const index = parseInt(document.getElementById('deleteIndex').value);
-            materials.splice(index, 1);
+            if (materials[index].approval_status !== '완료') {
+                materials.splice(index, 1);
+                closeDeleteModal();
+                filterAndRender();
+                showToast('요청이 삭제되었습니다.');
+                return;
+            }
+
+            materials[index] = {
+                ...materials[index],
+                approval_status: '삭제중'
+            };
             closeDeleteModal();
             filterAndRender();
-            showToast('소재가 삭제되었습니다.');
+            showToast('소재 삭제 신청이 접수되었습니다. (관리자 승인 필요)');
         }
 
         function showToast(message) {
@@ -897,6 +1052,9 @@
         });
         document.getElementById('deleteModal').addEventListener('click', function(e) {
             if (e.target === this) closeDeleteModal();
+        });
+        document.getElementById('bulkUploadModal').addEventListener('click', function(e) {
+            if (e.target === this) closeBulkUploadModal();
         });
     </script>
 </body>

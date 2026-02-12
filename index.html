@@ -165,18 +165,18 @@
             cursor: pointer;
         }
 
-        .date-field.disabled input[type="date"] {
+        .date-field.is-inactive input[type="date"] {
             background: #f1f5f9;
             color: #94a3b8;
             border-color: #e2e8f0;
-            cursor: not-allowed;
+            cursor: pointer;
         }
 
-        .form-group select:disabled {
+        .form-group select.is-inactive {
             background: #f1f5f9;
             color: #94a3b8;
             border-color: #e2e8f0;
-            cursor: not-allowed;
+            cursor: pointer;
         }
 
         .form-group input:focus,
@@ -897,12 +897,10 @@
             const skipReset = opts.skipReset === true;
 
             if (mode === 'quick') {
-                yearSelect.disabled = false;
-                periodSelect.disabled = false;
-                startDateInput.disabled = true;
-                endDateInput.disabled = true;
-                startDateField.classList.add('disabled');
-                endDateField.classList.add('disabled');
+                yearSelect.classList.remove('is-inactive');
+                periodSelect.classList.remove('is-inactive');
+                startDateField.classList.add('is-inactive');
+                endDateField.classList.add('is-inactive');
 
                 if (!skipReset) {
                     if (!yearSelect.value) {
@@ -914,15 +912,13 @@
                     }
                 }
             } else {
-                startDateInput.disabled = false;
-                endDateInput.disabled = false;
-                startDateField.classList.remove('disabled');
-                endDateField.classList.remove('disabled');
+                startDateField.classList.remove('is-inactive');
+                endDateField.classList.remove('is-inactive');
 
                 yearSelect.value = '';
                 periodSelect.value = '';
-                yearSelect.disabled = true;
-                periodSelect.disabled = true;
+                yearSelect.classList.add('is-inactive');
+                periodSelect.classList.add('is-inactive');
             }
         }
 

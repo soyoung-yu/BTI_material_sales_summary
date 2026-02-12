@@ -54,7 +54,11 @@ const RAW_SALES_DATA = [
     { raw_cd: "M-1009", raw_nm: "TWILIGHT NIACIN", raw_ratio: 0.006, mitem_code: "P-2009", mitem_name: "톤업 선스크린 50ML", category: "FERT", forml_code: "11S1301", forml_name: "선크림(스킨케어)", customer_code: "C-3109", customer_name: "트와이라이트", base_time: "2025-07-01", total_revenue: 14700000.0, product_sales_revenue: 14700000.0, net_revenue: 6200000.0, product_name: "톤업 선스크린" },
 
     { raw_cd: "M-1010", raw_nm: "BREEZE PANTHENOL", raw_ratio: 0.005, mitem_code: "P-2010", mitem_name: "수딩 로션 120ML", category: "FERT", forml_code: "11S1302", forml_name: "선로션(스킨케어)", customer_code: "C-3110", customer_name: "브리즈코", base_time: "2024-12-01", total_revenue: 9800000.0, product_sales_revenue: 9800000.0, net_revenue: 4200000.0, product_name: "수딩 로션" },
-    { raw_cd: "M-1010", raw_nm: "BREEZE PANTHENOL", raw_ratio: 0.005, mitem_code: "P-2010", mitem_name: "수딩 로션 120ML", category: "FERT", forml_code: "11S1302", forml_name: "선로션(스킨케어)", customer_code: "C-3110", customer_name: "브리즈코", base_time: "2025-08-01", total_revenue: 10600000.0, product_sales_revenue: 10600000.0, net_revenue: 4600000.0, product_name: "수딩 로션" }
+    { raw_cd: "M-1010", raw_nm: "BREEZE PANTHENOL", raw_ratio: 0.005, mitem_code: "P-2010", mitem_name: "수딩 로션 120ML", category: "FERT", forml_code: "11S1302", forml_name: "선로션(스킨케어)", customer_code: "C-3110", customer_name: "브리즈코", base_time: "2025-08-01", total_revenue: 10600000.0, product_sales_revenue: 10600000.0, net_revenue: 4600000.0, product_name: "수딩 로션" },
+
+    { raw_cd: "M-1001", raw_nm: "AURORA PEPTIDE", raw_ratio: 0.002, mitem_code: "P-2001", mitem_name: "라이트닝 세럼 30ML", category: "FERT", forml_code: "11S0703", forml_name: "앰플", customer_code: "C-3101", customer_name: "루미너스코", base_time: "2026-01-01", total_revenue: 11200000.0, product_sales_revenue: 11200000.0, net_revenue: 5100000.0, product_name: "라이트닝 세럼" },
+    { raw_cd: "M-1006", raw_nm: "FOREST PROBIOME", raw_ratio: 0.003, mitem_code: "P-2006", mitem_name: "리프레시 토너 200ML", category: "FERT", forml_code: "11S1009", forml_name: "마스크 패드", customer_code: "C-3106", customer_name: "포레스트랩", base_time: "2026-01-01", total_revenue: 5900000.0, product_sales_revenue: 5900000.0, net_revenue: 2700000.0, product_name: "리프레시 토너" },
+    { raw_cd: "M-1009", raw_nm: "TWILIGHT NIACIN", raw_ratio: 0.006, mitem_code: "P-2009", mitem_name: "톤업 선스크린 50ML", category: "FERT", forml_code: "11S1301", forml_name: "선크림(스킨케어)", customer_code: "C-3109", customer_name: "트와이라이트", base_time: "2026-01-01", total_revenue: 15200000.0, product_sales_revenue: 15200000.0, net_revenue: 6800000.0, product_name: "톤업 선스크린" }
 ];
 
 // 샘플 데이터 확장 (기간 범위 유지, 기간별 +50행)
@@ -80,7 +84,8 @@ const EXTRA_BASE_TIMES = [
     "2025-09-01",
     "2025-10-01",
     "2025-11-01",
-    "2025-12-01"
+    "2025-12-01",
+    "2026-01-01"
 ];
 
 const MATERIAL_POOL = [

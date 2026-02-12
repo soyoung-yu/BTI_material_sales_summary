@@ -15,50 +15,50 @@ const MATERIALS = [
 // 샘플 데이터 - sample_df.csv에서 자동 생성
 
 const RAW_SALES_DATA = [
-    { raw_cd: "M-1001", raw_nm: "AURORA PEPTIDE", raw_ratio: 0.002, mitem_code: "P-2001", mitem_name: "라이트닝 세럼 30ML", category: "FERT", forml_code: "11S0703", forml_name: "앰플", customer_code: "C-3101", customer_name: "루미너스코", base_time: "2024-03-01", total_revenue: 9100000.0, product_sales_revenue: 9100000.0, net_revenue: 4100000.0, product_name: "라이트닝 세럼" },
-    { raw_cd: "M-1001", raw_nm: "AURORA PEPTIDE", raw_ratio: 0.002, mitem_code: "P-2001", mitem_name: "라이트닝 세럼 30ML", category: "FERT", forml_code: "11S0703", forml_name: "앰플", customer_code: "C-3101", customer_name: "루미너스코", base_time: "2025-07-01", total_revenue: 10300000.0, product_sales_revenue: 10300000.0, net_revenue: 4700000.0, product_name: "라이트닝 세럼" },
-    { raw_cd: "M-1001", raw_nm: "AURORA PEPTIDE", raw_ratio: 0.002, mitem_code: "P-2001", mitem_name: "라이트닝 세럼 30ML", category: "FERT", forml_code: "11S0703", forml_name: "앰플", customer_code: "C-3101", customer_name: "루미너스코", base_time: "2025-10-01", total_revenue: 12450000.0, product_sales_revenue: 12450000.0, net_revenue: 5600000.0, product_name: "라이트닝 세럼" },
-    { raw_cd: "M-1001", raw_nm: "AURORA PEPTIDE", raw_ratio: 0.002, mitem_code: "P-2001", mitem_name: "라이트닝 세럼 30ML", category: "FERT", forml_code: "11S0703", forml_name: "앰플", customer_code: "C-3101", customer_name: "루미너스코", base_time: "2025-11-01", total_revenue: 9800000.0, product_sales_revenue: 9800000.0, net_revenue: 4300000.0, product_name: "라이트닝 세럼" },
+    { raw_cd: "M-1001", raw_nm: "AURORA PEPTIDE", raw_ratio: 0.002, mitem_code: "P-2001", mitem_name: "라이트닝 세럼 30ML", category: "FERT", forml_code: "11S0703", forml_name: "앰플", customer_code: "C-3101", customer_name: "루미너스코", base_time: "2024-03-01", total_revenue: 9100000.0, product_sales_revenue: 9100000.0, net_sales: 6600000.0, net_revenue: 4100000.0, product_name: "라이트닝 세럼" },
+    { raw_cd: "M-1001", raw_nm: "AURORA PEPTIDE", raw_ratio: 0.002, mitem_code: "P-2001", mitem_name: "라이트닝 세럼 30ML", category: "FERT", forml_code: "11S0703", forml_name: "앰플", customer_code: "C-3101", customer_name: "루미너스코", base_time: "2025-07-01", total_revenue: 10300000.0, product_sales_revenue: 10300000.0, net_sales: 7500000.0, net_revenue: 4700000.0, product_name: "라이트닝 세럼" },
+    { raw_cd: "M-1001", raw_nm: "AURORA PEPTIDE", raw_ratio: 0.002, mitem_code: "P-2001", mitem_name: "라이트닝 세럼 30ML", category: "FERT", forml_code: "11S0703", forml_name: "앰플", customer_code: "C-3101", customer_name: "루미너스코", base_time: "2025-10-01", total_revenue: 12450000.0, product_sales_revenue: 12450000.0, net_sales: 9025000.0, net_revenue: 5600000.0, product_name: "라이트닝 세럼" },
+    { raw_cd: "M-1001", raw_nm: "AURORA PEPTIDE", raw_ratio: 0.002, mitem_code: "P-2001", mitem_name: "라이트닝 세럼 30ML", category: "FERT", forml_code: "11S0703", forml_name: "앰플", customer_code: "C-3101", customer_name: "루미너스코", base_time: "2025-11-01", total_revenue: 9800000.0, product_sales_revenue: 9800000.0, net_sales: 7050000.0, net_revenue: 4300000.0, product_name: "라이트닝 세럼" },
 
-    { raw_cd: "M-1002", raw_nm: "SOLAR BIOME", raw_ratio: 0.015, mitem_code: "P-2002", mitem_name: "모이스처 크림 50ML", category: "FERT", forml_code: "11S0301", forml_name: "크림", customer_code: "C-3102", customer_name: "소프트랩", base_time: "2024-06-01", total_revenue: 17200000.0, product_sales_revenue: 17200000.0, net_revenue: 7600000.0, product_name: "모이스처 크림" },
-    { raw_cd: "M-1002", raw_nm: "SOLAR BIOME", raw_ratio: 0.015, mitem_code: "P-2002", mitem_name: "모이스처 크림 50ML", category: "FERT", forml_code: "11S0301", forml_name: "크림", customer_code: "C-3102", customer_name: "소프트랩", base_time: "2025-08-01", total_revenue: 20100000.0, product_sales_revenue: 20100000.0, net_revenue: 9000000.0, product_name: "모이스처 크림" },
-    { raw_cd: "M-1002", raw_nm: "SOLAR BIOME", raw_ratio: 0.015, mitem_code: "P-2002", mitem_name: "모이스처 크림 50ML", category: "FERT", forml_code: "11S0301", forml_name: "크림", customer_code: "C-3102", customer_name: "소프트랩", base_time: "2025-10-01", total_revenue: 21500000.0, product_sales_revenue: 21500000.0, net_revenue: 9600000.0, product_name: "모이스처 크림" },
-    { raw_cd: "M-1002", raw_nm: "SOLAR BIOME", raw_ratio: 0.015, mitem_code: "P-2002", mitem_name: "모이스처 크림 50ML", category: "FERT", forml_code: "11S0301", forml_name: "크림", customer_code: "C-3102", customer_name: "소프트랩", base_time: "2025-12-01", total_revenue: 18300000.0, product_sales_revenue: 18300000.0, net_revenue: 8200000.0, product_name: "모이스처 크림" },
+    { raw_cd: "M-1002", raw_nm: "SOLAR BIOME", raw_ratio: 0.015, mitem_code: "P-2002", mitem_name: "모이스처 크림 50ML", category: "FERT", forml_code: "11S0301", forml_name: "크림", customer_code: "C-3102", customer_name: "소프트랩", base_time: "2024-06-01", total_revenue: 17200000.0, product_sales_revenue: 17200000.0, net_sales: 12400000.0, net_revenue: 7600000.0, product_name: "모이스처 크림" },
+    { raw_cd: "M-1002", raw_nm: "SOLAR BIOME", raw_ratio: 0.015, mitem_code: "P-2002", mitem_name: "모이스처 크림 50ML", category: "FERT", forml_code: "11S0301", forml_name: "크림", customer_code: "C-3102", customer_name: "소프트랩", base_time: "2025-08-01", total_revenue: 20100000.0, product_sales_revenue: 20100000.0, net_sales: 14550000.0, net_revenue: 9000000.0, product_name: "모이스처 크림" },
+    { raw_cd: "M-1002", raw_nm: "SOLAR BIOME", raw_ratio: 0.015, mitem_code: "P-2002", mitem_name: "모이스처 크림 50ML", category: "FERT", forml_code: "11S0301", forml_name: "크림", customer_code: "C-3102", customer_name: "소프트랩", base_time: "2025-10-01", total_revenue: 21500000.0, product_sales_revenue: 21500000.0, net_sales: 15550000.0, net_revenue: 9600000.0, product_name: "모이스처 크림" },
+    { raw_cd: "M-1002", raw_nm: "SOLAR BIOME", raw_ratio: 0.015, mitem_code: "P-2002", mitem_name: "모이스처 크림 50ML", category: "FERT", forml_code: "11S0301", forml_name: "크림", customer_code: "C-3102", customer_name: "소프트랩", base_time: "2025-12-01", total_revenue: 18300000.0, product_sales_revenue: 18300000.0, net_sales: 13250000.0, net_revenue: 8200000.0, product_name: "모이스처 크림" },
 
-    { raw_cd: "M-1003", raw_nm: "RIVER CICA", raw_ratio: 0.008, mitem_code: "P-2003", mitem_name: "시카 젤 80ML", category: "FERT", forml_code: "11S0401", forml_name: "젤", customer_code: "C-3103", customer_name: "리버뷰", base_time: "2024-02-01", total_revenue: 12100000.0, product_sales_revenue: 12100000.0, net_revenue: 5200000.0, product_name: "시카 젤" },
-    { raw_cd: "M-1003", raw_nm: "RIVER CICA", raw_ratio: 0.008, mitem_code: "P-2003", mitem_name: "시카 젤 80ML", category: "FERT", forml_code: "11S0401", forml_name: "젤", customer_code: "C-3103", customer_name: "리버뷰", base_time: "2025-11-01", total_revenue: 14200000.0, product_sales_revenue: 14200000.0, net_revenue: 6100000.0, product_name: "시카 젤" },
-    { raw_cd: "M-1003", raw_nm: "RIVER CICA", raw_ratio: 0.008, mitem_code: "P-2003", mitem_name: "시카 젤 80ML", category: "FERT", forml_code: "11S0401", forml_name: "젤", customer_code: "C-3103", customer_name: "리버뷰", base_time: "2025-09-01", total_revenue: 15500000.0, product_sales_revenue: 15500000.0, net_revenue: 6800000.0, product_name: "시카 젤" },
+    { raw_cd: "M-1003", raw_nm: "RIVER CICA", raw_ratio: 0.008, mitem_code: "P-2003", mitem_name: "시카 젤 80ML", category: "FERT", forml_code: "11S0401", forml_name: "젤", customer_code: "C-3103", customer_name: "리버뷰", base_time: "2024-02-01", total_revenue: 12100000.0, product_sales_revenue: 12100000.0, net_sales: 8650000.0, net_revenue: 5200000.0, product_name: "시카 젤" },
+    { raw_cd: "M-1003", raw_nm: "RIVER CICA", raw_ratio: 0.008, mitem_code: "P-2003", mitem_name: "시카 젤 80ML", category: "FERT", forml_code: "11S0401", forml_name: "젤", customer_code: "C-3103", customer_name: "리버뷰", base_time: "2025-11-01", total_revenue: 14200000.0, product_sales_revenue: 14200000.0, net_sales: 10150000.0, net_revenue: 6100000.0, product_name: "시카 젤" },
+    { raw_cd: "M-1003", raw_nm: "RIVER CICA", raw_ratio: 0.008, mitem_code: "P-2003", mitem_name: "시카 젤 80ML", category: "FERT", forml_code: "11S0401", forml_name: "젤", customer_code: "C-3103", customer_name: "리버뷰", base_time: "2025-09-01", total_revenue: 15500000.0, product_sales_revenue: 15500000.0, net_sales: 11150000.0, net_revenue: 6800000.0, product_name: "시카 젤" },
 
-    { raw_cd: "M-1004", raw_nm: "CLOUD COLLAGEN", raw_ratio: 0.020, mitem_code: "P-2004", mitem_name: "클라우드 마스크 5매", category: "FERT", forml_code: "11S1004", forml_name: "마스크시트", customer_code: "C-3104", customer_name: "스카이메드", base_time: "2024-09-01", total_revenue: 6800000.0, product_sales_revenue: 6800000.0, net_revenue: 2800000.0, product_name: "클라우드 마스크" },
-    { raw_cd: "M-1004", raw_nm: "CLOUD COLLAGEN", raw_ratio: 0.020, mitem_code: "P-2004", mitem_name: "클라우드 마스크 5매", category: "FERT", forml_code: "11S1004", forml_name: "마스크시트", customer_code: "C-3104", customer_name: "스카이메드", base_time: "2025-07-01", total_revenue: 7200000.0, product_sales_revenue: 7200000.0, net_revenue: 3000000.0, product_name: "클라우드 마스크" },
-    { raw_cd: "M-1004", raw_nm: "CLOUD COLLAGEN", raw_ratio: 0.020, mitem_code: "P-2004", mitem_name: "클라우드 마스크 5매", category: "FERT", forml_code: "11S1004", forml_name: "마스크시트", customer_code: "C-3104", customer_name: "스카이메드", base_time: "2025-10-01", total_revenue: 7600000.0, product_sales_revenue: 7600000.0, net_revenue: 3100000.0, product_name: "클라우드 마스크" },
-    { raw_cd: "M-1004", raw_nm: "CLOUD COLLAGEN", raw_ratio: 0.020, mitem_code: "P-2004", mitem_name: "클라우드 마스크 5매", category: "FERT", forml_code: "11S1004", forml_name: "마스크시트", customer_code: "C-3104", customer_name: "스카이메드", base_time: "2025-12-01", total_revenue: 8900000.0, product_sales_revenue: 8900000.0, net_revenue: 3600000.0, product_name: "클라우드 마스크" },
+    { raw_cd: "M-1004", raw_nm: "CLOUD COLLAGEN", raw_ratio: 0.020, mitem_code: "P-2004", mitem_name: "클라우드 마스크 5매", category: "FERT", forml_code: "11S1004", forml_name: "마스크시트", customer_code: "C-3104", customer_name: "스카이메드", base_time: "2024-09-01", total_revenue: 6800000.0, product_sales_revenue: 6800000.0, net_sales: 4800000.0, net_revenue: 2800000.0, product_name: "클라우드 마스크" },
+    { raw_cd: "M-1004", raw_nm: "CLOUD COLLAGEN", raw_ratio: 0.020, mitem_code: "P-2004", mitem_name: "클라우드 마스크 5매", category: "FERT", forml_code: "11S1004", forml_name: "마스크시트", customer_code: "C-3104", customer_name: "스카이메드", base_time: "2025-07-01", total_revenue: 7200000.0, product_sales_revenue: 7200000.0, net_sales: 5100000.0, net_revenue: 3000000.0, product_name: "클라우드 마스크" },
+    { raw_cd: "M-1004", raw_nm: "CLOUD COLLAGEN", raw_ratio: 0.020, mitem_code: "P-2004", mitem_name: "클라우드 마스크 5매", category: "FERT", forml_code: "11S1004", forml_name: "마스크시트", customer_code: "C-3104", customer_name: "스카이메드", base_time: "2025-10-01", total_revenue: 7600000.0, product_sales_revenue: 7600000.0, net_sales: 5350000.0, net_revenue: 3100000.0, product_name: "클라우드 마스크" },
+    { raw_cd: "M-1004", raw_nm: "CLOUD COLLAGEN", raw_ratio: 0.020, mitem_code: "P-2004", mitem_name: "클라우드 마스크 5매", category: "FERT", forml_code: "11S1004", forml_name: "마스크시트", customer_code: "C-3104", customer_name: "스카이메드", base_time: "2025-12-01", total_revenue: 8900000.0, product_sales_revenue: 8900000.0, net_sales: 6250000.0, net_revenue: 3600000.0, product_name: "클라우드 마스크" },
 
-    { raw_cd: "M-1005", raw_nm: "NOVA CERAMIDE", raw_ratio: 0.004, mitem_code: "P-2005", mitem_name: "나이트 리페어 크림 60ML", category: "FERT", forml_code: "11S0301", forml_name: "크림", customer_code: "C-3105", customer_name: "노바케어", base_time: "2024-05-01", total_revenue: 16200000.0, product_sales_revenue: 16200000.0, net_revenue: 7200000.0, product_name: "나이트 리페어 크림" },
-    { raw_cd: "M-1005", raw_nm: "NOVA CERAMIDE", raw_ratio: 0.004, mitem_code: "P-2005", mitem_name: "나이트 리페어 크림 60ML", category: "FERT", forml_code: "11S0301", forml_name: "크림", customer_code: "C-3105", customer_name: "노바케어", base_time: "2025-08-01", total_revenue: 18700000.0, product_sales_revenue: 18700000.0, net_revenue: 8400000.0, product_name: "나이트 리페어 크림" },
-    { raw_cd: "M-1005", raw_nm: "NOVA CERAMIDE", raw_ratio: 0.004, mitem_code: "P-2005", mitem_name: "나이트 리페어 크림 60ML", category: "FERT", forml_code: "11S0301", forml_name: "크림", customer_code: "C-3105", customer_name: "노바케어", base_time: "2025-11-01", total_revenue: 19800000.0, product_sales_revenue: 19800000.0, net_revenue: 8900000.0, product_name: "나이트 리페어 크림" },
+    { raw_cd: "M-1005", raw_nm: "NOVA CERAMIDE", raw_ratio: 0.004, mitem_code: "P-2005", mitem_name: "나이트 리페어 크림 60ML", category: "FERT", forml_code: "11S0301", forml_name: "크림", customer_code: "C-3105", customer_name: "노바케어", base_time: "2024-05-01", total_revenue: 16200000.0, product_sales_revenue: 16200000.0, net_sales: 11700000.0, net_revenue: 7200000.0, product_name: "나이트 리페어 크림" },
+    { raw_cd: "M-1005", raw_nm: "NOVA CERAMIDE", raw_ratio: 0.004, mitem_code: "P-2005", mitem_name: "나이트 리페어 크림 60ML", category: "FERT", forml_code: "11S0301", forml_name: "크림", customer_code: "C-3105", customer_name: "노바케어", base_time: "2025-08-01", total_revenue: 18700000.0, product_sales_revenue: 18700000.0, net_sales: 13550000.0, net_revenue: 8400000.0, product_name: "나이트 리페어 크림" },
+    { raw_cd: "M-1005", raw_nm: "NOVA CERAMIDE", raw_ratio: 0.004, mitem_code: "P-2005", mitem_name: "나이트 리페어 크림 60ML", category: "FERT", forml_code: "11S0301", forml_name: "크림", customer_code: "C-3105", customer_name: "노바케어", base_time: "2025-11-01", total_revenue: 19800000.0, product_sales_revenue: 19800000.0, net_sales: 14350000.0, net_revenue: 8900000.0, product_name: "나이트 리페어 크림" },
 
-    { raw_cd: "M-1006", raw_nm: "FOREST PROBIOME", raw_ratio: 0.003, mitem_code: "P-2006", mitem_name: "리프레시 토너 200ML", category: "FERT", forml_code: "11S1009", forml_name: "마스크 패드", customer_code: "C-3106", customer_name: "포레스트랩", base_time: "2024-01-01", total_revenue: 4700000.0, product_sales_revenue: 4700000.0, net_revenue: 2100000.0, product_name: "리프레시 토너" },
-    { raw_cd: "M-1006", raw_nm: "FOREST PROBIOME", raw_ratio: 0.003, mitem_code: "P-2006", mitem_name: "리프레시 토너 200ML", category: "FERT", forml_code: "11S1009", forml_name: "마스크 패드", customer_code: "C-3106", customer_name: "포레스트랩", base_time: "2025-12-01", total_revenue: 5400000.0, product_sales_revenue: 5400000.0, net_revenue: 2500000.0, product_name: "리프레시 토너" },
-    { raw_cd: "M-1006", raw_nm: "FOREST PROBIOME", raw_ratio: 0.003, mitem_code: "P-2006", mitem_name: "리프레시 토너 200ML", category: "FERT", forml_code: "11S1009", forml_name: "마스크 패드", customer_code: "C-3106", customer_name: "포레스트랩", base_time: "2025-09-01", total_revenue: 6100000.0, product_sales_revenue: 6100000.0, net_revenue: 2800000.0, product_name: "리프레시 토너" },
+    { raw_cd: "M-1006", raw_nm: "FOREST PROBIOME", raw_ratio: 0.003, mitem_code: "P-2006", mitem_name: "리프레시 토너 200ML", category: "FERT", forml_code: "11S1009", forml_name: "마스크 패드", customer_code: "C-3106", customer_name: "포레스트랩", base_time: "2024-01-01", total_revenue: 4700000.0, product_sales_revenue: 4700000.0, net_sales: 3400000.0, net_revenue: 2100000.0, product_name: "리프레시 토너" },
+    { raw_cd: "M-1006", raw_nm: "FOREST PROBIOME", raw_ratio: 0.003, mitem_code: "P-2006", mitem_name: "리프레시 토너 200ML", category: "FERT", forml_code: "11S1009", forml_name: "마스크 패드", customer_code: "C-3106", customer_name: "포레스트랩", base_time: "2025-12-01", total_revenue: 5400000.0, product_sales_revenue: 5400000.0, net_sales: 3950000.0, net_revenue: 2500000.0, product_name: "리프레시 토너" },
+    { raw_cd: "M-1006", raw_nm: "FOREST PROBIOME", raw_ratio: 0.003, mitem_code: "P-2006", mitem_name: "리프레시 토너 200ML", category: "FERT", forml_code: "11S1009", forml_name: "마스크 패드", customer_code: "C-3106", customer_name: "포레스트랩", base_time: "2025-09-01", total_revenue: 6100000.0, product_sales_revenue: 6100000.0, net_sales: 4450000.0, net_revenue: 2800000.0, product_name: "리프레시 토너" },
 
-    { raw_cd: "M-1007", raw_nm: "POLAR HYALURON", raw_ratio: 0.007, mitem_code: "P-2007", mitem_name: "하이드라 수분 에센스 50ML", category: "FERT", forml_code: "11S0701", forml_name: "에센스", customer_code: "C-3107", customer_name: "폴라뷰티", base_time: "2024-07-01", total_revenue: 11800000.0, product_sales_revenue: 11800000.0, net_revenue: 5200000.0, product_name: "하이드라 수분 에센스" },
-    { raw_cd: "M-1007", raw_nm: "POLAR HYALURON", raw_ratio: 0.007, mitem_code: "P-2007", mitem_name: "하이드라 수분 에센스 50ML", category: "FERT", forml_code: "11S0701", forml_name: "에센스", customer_code: "C-3107", customer_name: "폴라뷰티", base_time: "2025-10-01", total_revenue: 12600000.0, product_sales_revenue: 12600000.0, net_revenue: 5600000.0, product_name: "하이드라 수분 에센스" },
-    { raw_cd: "M-1007", raw_nm: "POLAR HYALURON", raw_ratio: 0.007, mitem_code: "P-2007", mitem_name: "하이드라 수분 에센스 50ML", category: "FERT", forml_code: "11S0701", forml_name: "에센스", customer_code: "C-3107", customer_name: "폴라뷰티", base_time: "2025-12-01", total_revenue: 13200000.0, product_sales_revenue: 13200000.0, net_revenue: 5900000.0, product_name: "하이드라 수분 에센스" },
+    { raw_cd: "M-1007", raw_nm: "POLAR HYALURON", raw_ratio: 0.007, mitem_code: "P-2007", mitem_name: "하이드라 수분 에센스 50ML", category: "FERT", forml_code: "11S0701", forml_name: "에센스", customer_code: "C-3107", customer_name: "폴라뷰티", base_time: "2024-07-01", total_revenue: 11800000.0, product_sales_revenue: 11800000.0, net_sales: 8500000.0, net_revenue: 5200000.0, product_name: "하이드라 수분 에센스" },
+    { raw_cd: "M-1007", raw_nm: "POLAR HYALURON", raw_ratio: 0.007, mitem_code: "P-2007", mitem_name: "하이드라 수분 에센스 50ML", category: "FERT", forml_code: "11S0701", forml_name: "에센스", customer_code: "C-3107", customer_name: "폴라뷰티", base_time: "2025-10-01", total_revenue: 12600000.0, product_sales_revenue: 12600000.0, net_sales: 9100000.0, net_revenue: 5600000.0, product_name: "하이드라 수분 에센스" },
+    { raw_cd: "M-1007", raw_nm: "POLAR HYALURON", raw_ratio: 0.007, mitem_code: "P-2007", mitem_name: "하이드라 수분 에센스 50ML", category: "FERT", forml_code: "11S0701", forml_name: "에센스", customer_code: "C-3107", customer_name: "폴라뷰티", base_time: "2025-12-01", total_revenue: 13200000.0, product_sales_revenue: 13200000.0, net_sales: 9550000.0, net_revenue: 5900000.0, product_name: "하이드라 수분 에센스" },
 
-    { raw_cd: "M-1008", raw_nm: "SPARK VIT-C", raw_ratio: 0.001, mitem_code: "P-2008", mitem_name: "브라이트 필링 토너 150ML", category: "FERT", forml_code: "11S0101", forml_name: "토너", customer_code: "C-3108", customer_name: "스파크랩", base_time: "2024-04-01", total_revenue: 6500000.0, product_sales_revenue: 6500000.0, net_revenue: 2500000.0, product_name: "브라이트 필링 토너" },
-    { raw_cd: "M-1008", raw_nm: "SPARK VIT-C", raw_ratio: 0.001, mitem_code: "P-2008", mitem_name: "브라이트 필링 토너 150ML", category: "FERT", forml_code: "11S0101", forml_name: "토너", customer_code: "C-3108", customer_name: "스파크랩", base_time: "2025-10-01", total_revenue: 7200000.0, product_sales_revenue: 7200000.0, net_revenue: 2800000.0, product_name: "브라이트 필링 토너" },
-    { raw_cd: "M-1008", raw_nm: "SPARK VIT-C", raw_ratio: 0.001, mitem_code: "P-2008", mitem_name: "브라이트 필링 토너 150ML", category: "FERT", forml_code: "11S0101", forml_name: "토너", customer_code: "C-3108", customer_name: "스파크랩", base_time: "2025-08-01", total_revenue: 7900000.0, product_sales_revenue: 7900000.0, net_revenue: 3100000.0, product_name: "브라이트 필링 토너" },
+    { raw_cd: "M-1008", raw_nm: "SPARK VIT-C", raw_ratio: 0.001, mitem_code: "P-2008", mitem_name: "브라이트 필링 토너 150ML", category: "FERT", forml_code: "11S0101", forml_name: "토너", customer_code: "C-3108", customer_name: "스파크랩", base_time: "2024-04-01", total_revenue: 6500000.0, product_sales_revenue: 6500000.0, net_sales: 4500000.0, net_revenue: 2500000.0, product_name: "브라이트 필링 토너" },
+    { raw_cd: "M-1008", raw_nm: "SPARK VIT-C", raw_ratio: 0.001, mitem_code: "P-2008", mitem_name: "브라이트 필링 토너 150ML", category: "FERT", forml_code: "11S0101", forml_name: "토너", customer_code: "C-3108", customer_name: "스파크랩", base_time: "2025-10-01", total_revenue: 7200000.0, product_sales_revenue: 7200000.0, net_sales: 5000000.0, net_revenue: 2800000.0, product_name: "브라이트 필링 토너" },
+    { raw_cd: "M-1008", raw_nm: "SPARK VIT-C", raw_ratio: 0.001, mitem_code: "P-2008", mitem_name: "브라이트 필링 토너 150ML", category: "FERT", forml_code: "11S0101", forml_name: "토너", customer_code: "C-3108", customer_name: "스파크랩", base_time: "2025-08-01", total_revenue: 7900000.0, product_sales_revenue: 7900000.0, net_sales: 5500000.0, net_revenue: 3100000.0, product_name: "브라이트 필링 토너" },
 
-    { raw_cd: "M-1009", raw_nm: "TWILIGHT NIACIN", raw_ratio: 0.006, mitem_code: "P-2009", mitem_name: "톤업 선스크린 50ML", category: "FERT", forml_code: "11S1301", forml_name: "선크림(스킨케어)", customer_code: "C-3109", customer_name: "트와이라이트", base_time: "2024-11-01", total_revenue: 13800000.0, product_sales_revenue: 13800000.0, net_revenue: 5900000.0, product_name: "톤업 선스크린" },
-    { raw_cd: "M-1009", raw_nm: "TWILIGHT NIACIN", raw_ratio: 0.006, mitem_code: "P-2009", mitem_name: "톤업 선스크린 50ML", category: "FERT", forml_code: "11S1301", forml_name: "선크림(스킨케어)", customer_code: "C-3109", customer_name: "트와이라이트", base_time: "2025-07-01", total_revenue: 14700000.0, product_sales_revenue: 14700000.0, net_revenue: 6200000.0, product_name: "톤업 선스크린" },
+    { raw_cd: "M-1009", raw_nm: "TWILIGHT NIACIN", raw_ratio: 0.006, mitem_code: "P-2009", mitem_name: "톤업 선스크린 50ML", category: "FERT", forml_code: "11S1301", forml_name: "선크림(스킨케어)", customer_code: "C-3109", customer_name: "트와이라이트", base_time: "2024-11-01", total_revenue: 13800000.0, product_sales_revenue: 13800000.0, net_sales: 9850000.0, net_revenue: 5900000.0, product_name: "톤업 선스크린" },
+    { raw_cd: "M-1009", raw_nm: "TWILIGHT NIACIN", raw_ratio: 0.006, mitem_code: "P-2009", mitem_name: "톤업 선스크린 50ML", category: "FERT", forml_code: "11S1301", forml_name: "선크림(스킨케어)", customer_code: "C-3109", customer_name: "트와이라이트", base_time: "2025-07-01", total_revenue: 14700000.0, product_sales_revenue: 14700000.0, net_sales: 10450000.0, net_revenue: 6200000.0, product_name: "톤업 선스크린" },
 
-    { raw_cd: "M-1010", raw_nm: "BREEZE PANTHENOL", raw_ratio: 0.005, mitem_code: "P-2010", mitem_name: "수딩 로션 120ML", category: "FERT", forml_code: "11S1302", forml_name: "선로션(스킨케어)", customer_code: "C-3110", customer_name: "브리즈코", base_time: "2024-12-01", total_revenue: 9800000.0, product_sales_revenue: 9800000.0, net_revenue: 4200000.0, product_name: "수딩 로션" },
-    { raw_cd: "M-1010", raw_nm: "BREEZE PANTHENOL", raw_ratio: 0.005, mitem_code: "P-2010", mitem_name: "수딩 로션 120ML", category: "FERT", forml_code: "11S1302", forml_name: "선로션(스킨케어)", customer_code: "C-3110", customer_name: "브리즈코", base_time: "2025-08-01", total_revenue: 10600000.0, product_sales_revenue: 10600000.0, net_revenue: 4600000.0, product_name: "수딩 로션" },
+    { raw_cd: "M-1010", raw_nm: "BREEZE PANTHENOL", raw_ratio: 0.005, mitem_code: "P-2010", mitem_name: "수딩 로션 120ML", category: "FERT", forml_code: "11S1302", forml_name: "선로션(스킨케어)", customer_code: "C-3110", customer_name: "브리즈코", base_time: "2024-12-01", total_revenue: 9800000.0, product_sales_revenue: 9800000.0, net_sales: 7000000.0, net_revenue: 4200000.0, product_name: "수딩 로션" },
+    { raw_cd: "M-1010", raw_nm: "BREEZE PANTHENOL", raw_ratio: 0.005, mitem_code: "P-2010", mitem_name: "수딩 로션 120ML", category: "FERT", forml_code: "11S1302", forml_name: "선로션(스킨케어)", customer_code: "C-3110", customer_name: "브리즈코", base_time: "2025-08-01", total_revenue: 10600000.0, product_sales_revenue: 10600000.0, net_sales: 7600000.0, net_revenue: 4600000.0, product_name: "수딩 로션" },
 
-    { raw_cd: "M-1001", raw_nm: "AURORA PEPTIDE", raw_ratio: 0.002, mitem_code: "P-2001", mitem_name: "라이트닝 세럼 30ML", category: "FERT", forml_code: "11S0703", forml_name: "앰플", customer_code: "C-3101", customer_name: "루미너스코", base_time: "2026-01-01", total_revenue: 11200000.0, product_sales_revenue: 11200000.0, net_revenue: 5100000.0, product_name: "라이트닝 세럼" },
-    { raw_cd: "M-1006", raw_nm: "FOREST PROBIOME", raw_ratio: 0.003, mitem_code: "P-2006", mitem_name: "리프레시 토너 200ML", category: "FERT", forml_code: "11S1009", forml_name: "마스크 패드", customer_code: "C-3106", customer_name: "포레스트랩", base_time: "2026-01-01", total_revenue: 5900000.0, product_sales_revenue: 5900000.0, net_revenue: 2700000.0, product_name: "리프레시 토너" },
-    { raw_cd: "M-1009", raw_nm: "TWILIGHT NIACIN", raw_ratio: 0.006, mitem_code: "P-2009", mitem_name: "톤업 선스크린 50ML", category: "FERT", forml_code: "11S1301", forml_name: "선크림(스킨케어)", customer_code: "C-3109", customer_name: "트와이라이트", base_time: "2026-01-01", total_revenue: 15200000.0, product_sales_revenue: 15200000.0, net_revenue: 6800000.0, product_name: "톤업 선스크린" }
+    { raw_cd: "M-1001", raw_nm: "AURORA PEPTIDE", raw_ratio: 0.002, mitem_code: "P-2001", mitem_name: "라이트닝 세럼 30ML", category: "FERT", forml_code: "11S0703", forml_name: "앰플", customer_code: "C-3101", customer_name: "루미너스코", base_time: "2026-01-01", total_revenue: 11200000.0, product_sales_revenue: 11200000.0, net_sales: 8150000.0, net_revenue: 5100000.0, product_name: "라이트닝 세럼" },
+    { raw_cd: "M-1006", raw_nm: "FOREST PROBIOME", raw_ratio: 0.003, mitem_code: "P-2006", mitem_name: "리프레시 토너 200ML", category: "FERT", forml_code: "11S1009", forml_name: "마스크 패드", customer_code: "C-3106", customer_name: "포레스트랩", base_time: "2026-01-01", total_revenue: 5900000.0, product_sales_revenue: 5900000.0, net_sales: 4300000.0, net_revenue: 2700000.0, product_name: "리프레시 토너" },
+    { raw_cd: "M-1009", raw_nm: "TWILIGHT NIACIN", raw_ratio: 0.006, mitem_code: "P-2009", mitem_name: "톤업 선스크린 50ML", category: "FERT", forml_code: "11S1301", forml_name: "선크림(스킨케어)", customer_code: "C-3109", customer_name: "트와이라이트", base_time: "2026-01-01", total_revenue: 15200000.0, product_sales_revenue: 15200000.0, net_sales: 11000000.0, net_revenue: 6800000.0, product_name: "톤업 선스크린" }
 ];
 
 // 샘플 데이터 확장 (기간 범위 유지, 기간별 +50행)
@@ -154,8 +154,10 @@ EXTRA_BASE_TIMES.forEach((baseTime, monthIndex) => {
 
         const salesBase = 5000000 + Math.floor(rand() * 18000000);
         const sales = Math.round(salesBase / 1000) * 1000;
+        const netSalesRatio = 0.78 + rand() * 0.12;
+        const netSales = Math.round(sales * netSalesRatio / 1000) * 1000;
         const margin = 0.35 + rand() * 0.25;
-        const net = Math.round(sales * margin / 1000) * 1000;
+        const net = Math.round(Math.min(netSales, sales * margin) / 1000) * 1000;
 
         GENERATED_ROWS.push({
             raw_cd: material.raw_cd,
@@ -171,6 +173,7 @@ EXTRA_BASE_TIMES.forEach((baseTime, monthIndex) => {
             base_time: baseTime,
             total_revenue: sales,
             product_sales_revenue: sales,
+            net_sales: netSales,
             net_revenue: net,
             product_name: product.product_name
         });
@@ -204,6 +207,7 @@ function aggregateTotal(data) {
     // mitem_code + customer_code + base_time 기준으로 중복 제거
     const seen = new Set();
     let totalRevenue = 0;
+    let totalNetSales = 0;
     let totalNet = 0;
     const uniqueProducts = new Set();
     const uniqueMaterials = new Set();
@@ -214,6 +218,7 @@ function aggregateTotal(data) {
         if (!seen.has(key)) {
             seen.add(key);
             totalRevenue += row.product_sales_revenue;
+            totalNetSales += row.net_sales;
             totalNet += row.net_revenue;
         }
         uniqueProducts.add(row.mitem_code);
@@ -223,7 +228,9 @@ function aggregateTotal(data) {
 
     return [{
         product_sales_revenue_sum: totalRevenue,
+        net_sales_sum: totalNetSales,
         net_revenue_sum: totalNet,
+        net_sales_margin: totalNetSales / totalRevenue,
         net_margin: totalNet / totalRevenue,
         mitem_code_uniq: uniqueProducts.size,
         raw_cd_uniq: uniqueMaterials.size,
@@ -242,12 +249,13 @@ function aggregateByMonth(data) {
 
         if (!seen[month]) seen[month] = new Set();
         if (!grouped[month]) {
-            grouped[month] = { product_sales_revenue_sum: 0, net_revenue_sum: 0 };
+            grouped[month] = { product_sales_revenue_sum: 0, net_sales_sum: 0, net_revenue_sum: 0 };
         }
 
         if (!seen[month].has(key)) {
             seen[month].add(key);
             grouped[month].product_sales_revenue_sum += row.product_sales_revenue;
+            grouped[month].net_sales_sum += row.net_sales;
             grouped[month].net_revenue_sum += row.net_revenue;
         }
     });
@@ -256,6 +264,7 @@ function aggregateByMonth(data) {
         .map(([month, vals]) => ({
             month,
             ...vals,
+            net_sales_margin: vals.net_sales_sum / vals.product_sales_revenue_sum,
             net_margin: vals.net_revenue_sum / vals.product_sales_revenue_sum
         }))
         .sort((a, b) => a.month.localeCompare(b.month));
@@ -275,12 +284,13 @@ function aggregateByQuarter(data) {
 
         if (!seen[qKey]) seen[qKey] = new Set();
         if (!grouped[qKey]) {
-            grouped[qKey] = { product_sales_revenue_sum: 0, net_revenue_sum: 0 };
+            grouped[qKey] = { product_sales_revenue_sum: 0, net_sales_sum: 0, net_revenue_sum: 0 };
         }
 
         if (!seen[qKey].has(key)) {
             seen[qKey].add(key);
             grouped[qKey].product_sales_revenue_sum += row.product_sales_revenue;
+            grouped[qKey].net_sales_sum += row.net_sales;
             grouped[qKey].net_revenue_sum += row.net_revenue;
         }
     });
@@ -289,6 +299,7 @@ function aggregateByQuarter(data) {
         .map(([quarter, vals]) => ({
             quarter,
             ...vals,
+            net_sales_margin: vals.net_sales_sum / vals.product_sales_revenue_sum,
             net_margin: vals.net_revenue_sum / vals.product_sales_revenue_sum
         }))
         .sort((a, b) => a.quarter.localeCompare(b.quarter));
@@ -308,12 +319,13 @@ function aggregateByHalf(data) {
 
         if (!seen[hKey]) seen[hKey] = new Set();
         if (!grouped[hKey]) {
-            grouped[hKey] = { product_sales_revenue_sum: 0, net_revenue_sum: 0 };
+            grouped[hKey] = { product_sales_revenue_sum: 0, net_sales_sum: 0, net_revenue_sum: 0 };
         }
 
         if (!seen[hKey].has(key)) {
             seen[hKey].add(key);
             grouped[hKey].product_sales_revenue_sum += row.product_sales_revenue;
+            grouped[hKey].net_sales_sum += row.net_sales;
             grouped[hKey].net_revenue_sum += row.net_revenue;
         }
     });
@@ -322,6 +334,7 @@ function aggregateByHalf(data) {
         .map(([half, vals]) => ({
             half,
             ...vals,
+            net_sales_margin: vals.net_sales_sum / vals.product_sales_revenue_sum,
             net_margin: vals.net_revenue_sum / vals.product_sales_revenue_sum
         }))
         .sort((a, b) => a.half.localeCompare(b.half));
@@ -338,11 +351,13 @@ function aggregateByMaterial(data) {
                 raw_cd: row.raw_cd,
                 raw_nm: row.raw_nm,
                 product_sales_revenue_sum: 0,
+                net_sales_sum: 0,
                 net_revenue_sum: 0,
                 products: new Set()
             };
         }
         grouped[key].product_sales_revenue_sum += row.product_sales_revenue;
+        grouped[key].net_sales_sum += row.net_sales;
         grouped[key].net_revenue_sum += row.net_revenue;
         grouped[key].products.add(row.mitem_code);
     });
@@ -356,7 +371,9 @@ function aggregateByMaterial(data) {
             raw_cd: vals.raw_cd,
             raw_nm: vals.raw_nm,
             product_sales_revenue_sum: vals.product_sales_revenue_sum,
+            net_sales_sum: vals.net_sales_sum,
             net_revenue_sum: vals.net_revenue_sum,
+            net_sales_margin: vals.net_sales_sum / vals.product_sales_revenue_sum,
             net_margin: vals.net_revenue_sum / vals.product_sales_revenue_sum,
             revenue_share: vals.product_sales_revenue_sum / dedupTotal,
             product_unique_cnt: vals.products.size
@@ -380,6 +397,7 @@ function aggregateByProductLine(data) {
                 customer_name: row.customer_name,
                 customer_code: row.customer_code,
                 product_sales_revenue_sum: 0,
+                net_sales_sum: 0,
                 net_revenue_sum: 0,
                 items: new Set()
             };
@@ -388,6 +406,7 @@ function aggregateByProductLine(data) {
         if (!seen[pKey].has(key)) {
             seen[pKey].add(key);
             grouped[pKey].product_sales_revenue_sum += row.product_sales_revenue;
+            grouped[pKey].net_sales_sum += row.net_sales;
             grouped[pKey].net_revenue_sum += row.net_revenue;
         }
         grouped[pKey].items.add(row.mitem_code);
@@ -401,7 +420,9 @@ function aggregateByProductLine(data) {
             product_name: vals.product_name,
             customer_name: vals.customer_name,
             product_sales_revenue_sum: vals.product_sales_revenue_sum,
+            net_sales_sum: vals.net_sales_sum,
             net_revenue_sum: vals.net_revenue_sum,
+            net_sales_margin: vals.net_sales_sum / vals.product_sales_revenue_sum,
             net_margin: vals.net_revenue_sum / vals.product_sales_revenue_sum,
             revenue_share: vals.product_sales_revenue_sum / dedupTotal,
             item_count: vals.items.size
@@ -424,6 +445,7 @@ function aggregateByCustomer(data) {
                 customer_code: row.customer_code,
                 customer_name: row.customer_name,
                 product_sales_revenue_sum: 0,
+                net_sales_sum: 0,
                 net_revenue_sum: 0,
                 products: new Set()
             };
@@ -432,6 +454,7 @@ function aggregateByCustomer(data) {
         if (!seen[cKey].has(key)) {
             seen[cKey].add(key);
             grouped[cKey].product_sales_revenue_sum += row.product_sales_revenue;
+            grouped[cKey].net_sales_sum += row.net_sales;
             grouped[cKey].net_revenue_sum += row.net_revenue;
         }
         grouped[cKey].products.add(row.mitem_code);
@@ -445,7 +468,9 @@ function aggregateByCustomer(data) {
             customer_code: vals.customer_code,
             customer_name: vals.customer_name,
             product_sales_revenue_sum: vals.product_sales_revenue_sum,
+            net_sales_sum: vals.net_sales_sum,
             net_revenue_sum: vals.net_revenue_sum,
+            net_sales_margin: vals.net_sales_sum / vals.product_sales_revenue_sum,
             net_margin: vals.net_revenue_sum / vals.product_sales_revenue_sum,
             revenue_share: vals.product_sales_revenue_sum / dedupTotal,
             product_unique_cnt: vals.products.size
@@ -468,6 +493,7 @@ function aggregateByFormulation(data) {
                 forml_code: row.forml_code,
                 forml_name: row.forml_name,
                 product_sales_revenue_sum: 0,
+                net_sales_sum: 0,
                 net_revenue_sum: 0,
                 products: new Set()
             };
@@ -476,6 +502,7 @@ function aggregateByFormulation(data) {
         if (!seen[fKey].has(key)) {
             seen[fKey].add(key);
             grouped[fKey].product_sales_revenue_sum += row.product_sales_revenue;
+            grouped[fKey].net_sales_sum += row.net_sales;
             grouped[fKey].net_revenue_sum += row.net_revenue;
         }
         grouped[fKey].products.add(row.mitem_code);
@@ -489,7 +516,9 @@ function aggregateByFormulation(data) {
             forml_code: vals.forml_code,
             forml_name: vals.forml_name,
             product_sales_revenue_sum: vals.product_sales_revenue_sum,
+            net_sales_sum: vals.net_sales_sum,
             net_revenue_sum: vals.net_revenue_sum,
+            net_sales_margin: vals.net_sales_sum / vals.product_sales_revenue_sum,
             net_margin: vals.net_revenue_sum / vals.product_sales_revenue_sum,
             revenue_share: vals.product_sales_revenue_sum / dedupTotal,
             product_unique_cnt: vals.products.size

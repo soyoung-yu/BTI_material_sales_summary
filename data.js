@@ -194,6 +194,73 @@ function formatPercent(num) {
     return (num * 100).toFixed(1) + '%';
 }
 
+// 제품 매출 중복 판별 키
+function getProductSaleKey(row) {
+    return `${row.mitem_code}_${row.customer_code}_${row.base_time}`;
+}
+
+// 제품 매출 중복 제거 (동일 제품/고객/기준월은 1건만 유지)
+function deduplicateProductSales(data) {
+    const seen = new Set();
+    return data.filter(row => {
+        const key = getProductSaleKey(row);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
+}
+
+// 소재별 집계에서 상대 소재 기준 중복 금액 계산
+// 예: A와 B가 함께 쓰인 제품 매출은 A의 B 중복, B의 A 중복에 각각 누적
+function calculateDuplicatePartnerAmountsByMaterial(data) {
+    const groups = {};
+    const duplicateByMaterial = {};
+
+    data.forEach(row => {
+        const key = getProductSaleKey(row);
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(row);
+    });
+
+    Object.values(groups).forEach(rows => {
+        if (rows.length <= 1) return;
+
+        const uniqueMaterials = {};
+        rows.forEach(row => {
+            if (!uniqueMaterials[row.raw_cd]) {
+                uniqueMaterials[row.raw_cd] = {
+                    raw_cd: row.raw_cd,
+                    raw_nm: row.raw_nm,
+                    amount: row.product_sales_revenue
+                };
+            }
+        });
+
+        const materials = Object.values(uniqueMaterials).sort((a, b) =>
+            String(a.raw_cd).localeCompare(String(b.raw_cd))
+        );
+
+        for (let i = 0; i < materials.length; i += 1) {
+            for (let j = i + 1; j < materials.length; j += 1) {
+                const left = materials[i];
+                const right = materials[j];
+                const amount = Math.max(left.amount, right.amount);
+
+                if (!duplicateByMaterial[left.raw_cd]) duplicateByMaterial[left.raw_cd] = {};
+                if (!duplicateByMaterial[right.raw_cd]) duplicateByMaterial[right.raw_cd] = {};
+
+                if (!duplicateByMaterial[left.raw_cd][right.raw_cd]) duplicateByMaterial[left.raw_cd][right.raw_cd] = 0;
+                if (!duplicateByMaterial[right.raw_cd][left.raw_cd]) duplicateByMaterial[right.raw_cd][left.raw_cd] = 0;
+
+                duplicateByMaterial[left.raw_cd][right.raw_cd] += amount;
+                duplicateByMaterial[right.raw_cd][left.raw_cd] += amount;
+            }
+        }
+    });
+
+    return duplicateByMaterial;
+}
+
 // 날짜 범위 필터
 function filterByDateRange(data, startDate, endDate) {
     return data.filter(row => {
@@ -343,6 +410,7 @@ function aggregateByHalf(data) {
 // 소재별 집계 (중복 허용 - 소재 기여도 파악용)
 function aggregateByMaterial(data) {
     const grouped = {};
+    const duplicateByMaterial = calculateDuplicatePartnerAmountsByMaterial(data);
 
     data.forEach(row => {
         const key = row.raw_cd;
@@ -362,12 +430,17 @@ function aggregateByMaterial(data) {
         grouped[key].products.add(row.mitem_code);
     });
 
-    // 총 매출 계산 (중복 제거된)
-    const totalStats = aggregateTotal(data)[0];
-    const dedupTotal = totalStats.product_sales_revenue_sum;
+    // 소재별 비중 분모는 중복 허용 총매출 사용 (소재별 비중 합계가 100%가 되도록)
+    const totalWithDuplicate = Object.values(grouped)
+        .reduce((sum, vals) => sum + vals.product_sales_revenue_sum, 0);
 
     return Object.values(grouped)
         .map(vals => ({
+            partnerDuplicateMap: duplicateByMaterial[vals.raw_cd] || {},
+            partnerDuplicateDetail: Object.entries(duplicateByMaterial[vals.raw_cd] || {})
+                .sort((a, b) => String(a[0]).localeCompare(String(b[0])))
+                .map(([partnerRawCd, amount]) => `${partnerRawCd}-${formatNumber(amount)}`)
+                .join(', '),
             raw_cd: vals.raw_cd,
             raw_nm: vals.raw_nm,
             product_sales_revenue_sum: vals.product_sales_revenue_sum,
@@ -375,8 +448,15 @@ function aggregateByMaterial(data) {
             net_revenue_sum: vals.net_revenue_sum,
             net_sales_margin: vals.net_sales_sum / vals.product_sales_revenue_sum,
             net_margin: vals.net_revenue_sum / vals.product_sales_revenue_sum,
-            revenue_share: vals.product_sales_revenue_sum / dedupTotal,
-            product_unique_cnt: vals.products.size
+            revenue_share: totalWithDuplicate > 0
+                ? vals.product_sales_revenue_sum / totalWithDuplicate
+                : 0,
+            product_unique_cnt: vals.products.size,
+            duplicate_amount: Object.values(duplicateByMaterial[vals.raw_cd] || {}).reduce((sum, v) => sum + v, 0),
+            duplicate_detail: Object.entries(duplicateByMaterial[vals.raw_cd] || {})
+                .sort((a, b) => String(a[0]).localeCompare(String(b[0])))
+                .map(([partnerRawCd, amount]) => `${vals.raw_cd}&${partnerRawCd}:${formatNumber(amount)}`)
+                .join(', ')
         }))
         .sort((a, b) => b.product_sales_revenue_sum - a.product_sales_revenue_sum);
 }

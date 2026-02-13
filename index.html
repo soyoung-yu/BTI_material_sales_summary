@@ -1357,13 +1357,14 @@
 
             // 선택된 집계 시트들 (정렬된 순서)
             const selectedSheets = getOrderedSelectedSheets();
+            const dedupedFilteredData = deduplicateProductSales(filteredData);
 
             for (const sheetName of selectedSheets) {
                 let data, columns;
 
                 switch (sheetName) {
                     case 'Summary_총매출':
-                        data = aggregateTotal(filteredData);
+                        data = aggregateTotal(dedupedFilteredData);
                         columns = [
                             { header: '총매출 합계', key: 'product_sales_revenue_sum', width: 20, style: { numFmt: '#,##0', alignment: { horizontal: 'right' } } },
                             { header: '순매출 합계', key: 'net_sales_sum', width: 20, style: { numFmt: '#,##0', alignment: { horizontal: 'right' } } },
@@ -1376,7 +1377,7 @@
                         ];
                         break;
                     case 'Summary_월별':
-                        data = aggregateByMonth(filteredData);
+                        data = aggregateByMonth(dedupedFilteredData);
                         columns = [
                             { header: '월', key: 'month', width: 12 },
                             { header: '총매출 합계', key: 'product_sales_revenue_sum', width: 20, style: { numFmt: '#,##0', alignment: { horizontal: 'right' } } },
@@ -1387,7 +1388,7 @@
                         ];
                         break;
                     case 'Summary_분기별':
-                        data = aggregateByQuarter(filteredData);
+                        data = aggregateByQuarter(dedupedFilteredData);
                         columns = [
                             { header: '분기', key: 'quarter', width: 12 },
                             { header: '총매출 합계', key: 'product_sales_revenue_sum', width: 20, style: { numFmt: '#,##0', alignment: { horizontal: 'right' } } },
@@ -1398,7 +1399,7 @@
                         ];
                         break;
                     case 'Summary_반기별':
-                        data = aggregateByHalf(filteredData);
+                        data = aggregateByHalf(dedupedFilteredData);
                         columns = [
                             { header: '반기', key: 'half', width: 12 },
                             { header: '총매출 합계', key: 'product_sales_revenue_sum', width: 20, style: { numFmt: '#,##0', alignment: { horizontal: 'right' } } },
@@ -1419,11 +1420,12 @@
                             { header: '영업이익 합계', key: 'net_revenue_sum', width: 20, style: { numFmt: '#,##0', alignment: { horizontal: 'right' } } },
                             { header: '영업이익률', key: 'net_margin', width: 12, style: { numFmt: '0.0%', alignment: { horizontal: 'right' } } },
                             { header: '총매출 비중', key: 'revenue_share', width: 12, style: { numFmt: '0.0%', alignment: { horizontal: 'right' } } },
-                            { header: '제품 수', key: 'product_unique_cnt', width: 10, style: { alignment: { horizontal: 'right' } } }
+                            { header: '제품 수', key: 'product_unique_cnt', width: 10, style: { alignment: { horizontal: 'right' } } },
+                            { header: '중복 금액(소재)', key: 'duplicate_detail', width: 28 }
                         ];
                         break;
                     case 'Summary_제품라인별':
-                        data = aggregateByProductLine(filteredData);
+                        data = aggregateByProductLine(dedupedFilteredData);
                         columns = [
                             { header: '제품라인', key: 'product_name', width: 35 },
                             { header: '고객명', key: 'customer_name', width: 20 },
@@ -1437,7 +1439,7 @@
                         ];
                         break;
                     case 'Summary_고객별':
-                        data = aggregateByCustomer(filteredData);
+                        data = aggregateByCustomer(dedupedFilteredData);
                         columns = [
                             { header: '고객코드', key: 'customer_code', width: 12 },
                             { header: '고객명', key: 'customer_name', width: 20 },
@@ -1451,7 +1453,7 @@
                         ];
                         break;
                     case 'Summary_제형별':
-                        data = aggregateByFormulation(filteredData);
+                        data = aggregateByFormulation(dedupedFilteredData);
                         columns = [
                             { header: '제형코드', key: 'forml_code', width: 12 },
                             { header: '제형명', key: 'forml_name', width: 20 },

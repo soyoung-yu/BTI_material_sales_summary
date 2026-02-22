@@ -9,7 +9,7 @@
 - 데이터
   - `data.js`: 목업 데이터(`RAW_SALES_DATA`, `MATERIALS`) + 집계 함수
 - 빌드/런타임
-  - 정적 파일만 사용. 의존성은 CDN(ExcelJS) 1개.
+  - 정적 파일만 사용. 의존성은 CDN 2개(ExcelJS, SheetJS/xlsx).
 
 **실행 방법**
 1. 로컬에서 `index.html`을 브라우저로 열면 리포트 생성 화면을 확인할 수 있습니다.
@@ -26,7 +26,7 @@
 - 기본 중복 제거 키: `mitem_code + customer_code + base_time`
 - `aggregateTotal`, `aggregateByMonth`, `aggregateByQuarter`, `aggregateByHalf`, `aggregateByProductLine`, `aggregateByCustomer`, `aggregateByFormulation`은 위 키 기준으로 중복 제거 후 합산
 - `aggregateByMaterial`은 소재 기여도 파악을 위해 **중복 제거 없이** 합산
-- `revenue_share` 계산은 `aggregateTotal` 기준의 중복 제거 총매출을 분모로 사용
+- `aggregateByMaterial`의 `revenue_share` 계산은 **중복 허용 총매출**을 분모로 사용(소재별 비중 합계가 100%가 되도록)
 
 **집계 시트/탭 구조**
 - 기본 포함: `Raw`

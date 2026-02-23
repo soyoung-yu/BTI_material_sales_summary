@@ -791,6 +791,8 @@
         <span id="toastMessage">다운로드 완료!</span>
     </div>
 
+    <script src="api-config.js"></script>
+    <script src="api-client.js"></script>
     <script src="data.js"></script>
     <script>
         // State
@@ -806,6 +808,36 @@
         const periodSelect = document.getElementById('periodSelect');
         const sheetTags = document.getElementById('sheetTags');
         const downloadBtn = document.getElementById('downloadBtn');
+
+        function normalizeDateString(value) {
+            if (!value) return '';
+            const text = String(value).trim();
+            return text.includes('T') ? text.split('T')[0] : text.substring(0, 10);
+        }
+
+        function normalizeReportRow(row) {
+            return {
+                ...row,
+                base_time: normalizeDateString(row.base_time),
+                total_revenue: Number(row.total_revenue ?? 0),
+                product_sales_revenue: Number(row.product_sales_revenue ?? row.total_revenue ?? 0),
+                net_revenue: Number(row.net_revenue ?? 0),
+            };
+        }
+
+        async function loadReportRows(startDate, endDate) {
+            if (window.BTIApiClient?.isConfigured()) {
+                const response = await window.BTIApiClient.getReportData({ startDate, endDate });
+                const rows = Array.isArray(response?.rows) ? response.rows : [];
+                return rows.map(normalizeReportRow);
+            }
+
+            if (typeof RAW_SALES_DATA !== 'undefined') {
+                return filterByDateRange(RAW_SALES_DATA, startDate, endDate).map(normalizeReportRow);
+            }
+
+            throw new Error('조회 API가 설정되지 않았고 샘플 데이터도 사용할 수 없습니다.');
+        }
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
@@ -1010,58 +1042,70 @@
             const startDate = startDateInput.value;
             const endDate = endDateInput.value;
 
+            if (!startDate || !endDate) {
+                showToast('조회 기간을 선택해주세요.');
+                return;
+            }
+
             // 로딩 상태 표시
             document.getElementById('emptyPreview').style.display = 'none';
             document.getElementById('loadingPreview').style.display = 'flex';
             document.getElementById('dataPreviewContent').style.display = 'none';
             downloadBtn.disabled = true;
 
-            // 서버 조회 시뮬레이션 (실제로는 FastAPI 호출)
-            await new Promise(resolve => setTimeout(resolve, 800));
+            try {
+                filteredData = await loadReportRows(startDate, endDate);
 
-            // 데이터 필터링 및 전처리
-            filteredData = filterByDateRange(RAW_SALES_DATA, startDate, endDate);
+                // 모든 선택된 집계 계산 (정렬된 시트 순서 유지)
+                aggregatedData = { Raw: filteredData };
 
-            // 모든 선택된 집계 계산 (정렬된 시트 순서 유지)
-            aggregatedData = { Raw: filteredData };
+                const orderedSheets = getOrderedSelectedSheets();
+                orderedSheets.forEach(sheetName => {
+                    switch (sheetName) {
+                        case 'Summary_총매출':
+                            aggregatedData[sheetName] = aggregateTotal(filteredData);
+                            break;
+                        case 'Summary_월별':
+                            aggregatedData[sheetName] = aggregateByMonth(filteredData);
+                            break;
+                        case 'Summary_분기별':
+                            aggregatedData[sheetName] = aggregateByQuarter(filteredData);
+                            break;
+                        case 'Summary_반기별':
+                            aggregatedData[sheetName] = aggregateByHalf(filteredData);
+                            break;
+                        case 'Summary_소재별':
+                            aggregatedData[sheetName] = aggregateByMaterial(filteredData);
+                            break;
+                        case 'Summary_제품라인별':
+                            aggregatedData[sheetName] = aggregateByProductLine(filteredData);
+                            break;
+                        case 'Summary_고객별':
+                            aggregatedData[sheetName] = aggregateByCustomer(filteredData);
+                            break;
+                        case 'Summary_제형별':
+                            aggregatedData[sheetName] = aggregateByFormulation(filteredData);
+                            break;
+                    }
+                });
 
-            const orderedSheets = getOrderedSelectedSheets();
-            orderedSheets.forEach(sheetName => {
-                switch (sheetName) {
-                    case 'Summary_총매출':
-                        aggregatedData[sheetName] = aggregateTotal(filteredData);
-                        break;
-                    case 'Summary_월별':
-                        aggregatedData[sheetName] = aggregateByMonth(filteredData);
-                        break;
-                    case 'Summary_분기별':
-                        aggregatedData[sheetName] = aggregateByQuarter(filteredData);
-                        break;
-                    case 'Summary_반기별':
-                        aggregatedData[sheetName] = aggregateByHalf(filteredData);
-                        break;
-                    case 'Summary_소재별':
-                        aggregatedData[sheetName] = aggregateByMaterial(filteredData);
-                        break;
-                    case 'Summary_제품라인별':
-                        aggregatedData[sheetName] = aggregateByProductLine(filteredData);
-                        break;
-                    case 'Summary_고객별':
-                        aggregatedData[sheetName] = aggregateByCustomer(filteredData);
-                        break;
-                    case 'Summary_제형별':
-                        aggregatedData[sheetName] = aggregateByFormulation(filteredData);
-                        break;
-                }
-            });
+                // 로딩 완료, 데이터 표시
+                document.getElementById('loadingPreview').style.display = 'none';
+                document.getElementById('dataPreviewContent').style.display = 'block';
+                downloadBtn.disabled = false;
 
-            // 로딩 완료, 데이터 표시
-            document.getElementById('loadingPreview').style.display = 'none';
-            document.getElementById('dataPreviewContent').style.display = 'block';
-            downloadBtn.disabled = false;
-
-            renderPreviewTabs();
-            showToast(`${filteredData.length}건의 데이터를 조회했습니다.`);
+                renderPreviewTabs();
+                showToast(`${filteredData.length}건의 데이터를 조회했습니다.`);
+            } catch (error) {
+                console.error(error);
+                aggregatedData = {};
+                filteredData = [];
+                document.getElementById('loadingPreview').style.display = 'none';
+                document.getElementById('emptyPreview').style.display = 'flex';
+                document.getElementById('dataPreviewContent').style.display = 'none';
+                downloadBtn.disabled = true;
+                showToast(error.message || '데이터 조회에 실패했습니다.');
+            }
         }
 
         function renderPreviewTabs() {
@@ -1118,15 +1162,12 @@
                         { label: '고객사', value: row => row.customer_name },
                         { label: '기준월', value: row => row.base_time },
                         { label: '총매출', value: row => `₩${formatNumber(row.product_sales_revenue)}` },
-                        { label: '순매출', value: row => `₩${formatNumber(row.net_sales)}` },
                         { label: '영업이익', value: row => `₩${formatNumber(row.net_revenue)}` }
                     ];
                     break;
                 case 'Summary_총매출':
                     columns = [
                         { label: '총매출 합계', value: row => `₩${formatNumber(row.product_sales_revenue_sum)}` },
-                        { label: '순매출 합계', value: row => `₩${formatNumber(row.net_sales_sum)}` },
-                        { label: '순매출률', value: row => `${(row.net_sales_margin * 100).toFixed(1)}%` },
                         { label: '영업이익 합계', value: row => `₩${formatNumber(row.net_revenue_sum)}` },
                         { label: '영업이익률', value: row => `${(row.net_margin * 100).toFixed(1)}%` },
                         { label: '제품 수', value: row => row.mitem_code_uniq },
@@ -1138,8 +1179,6 @@
                     columns = [
                         { label: '월', value: row => row.month },
                         { label: '총매출 합계', value: row => `₩${formatNumber(row.product_sales_revenue_sum)}` },
-                        { label: '순매출 합계', value: row => `₩${formatNumber(row.net_sales_sum)}` },
-                        { label: '순매출률', value: row => `${(row.net_sales_margin * 100).toFixed(1)}%` },
                         { label: '영업이익 합계', value: row => `₩${formatNumber(row.net_revenue_sum)}` },
                         { label: '영업이익률', value: row => `${(row.net_margin * 100).toFixed(1)}%` }
                     ];
@@ -1148,8 +1187,6 @@
                     columns = [
                         { label: '분기', value: row => row.quarter },
                         { label: '총매출 합계', value: row => `₩${formatNumber(row.product_sales_revenue_sum)}` },
-                        { label: '순매출 합계', value: row => `₩${formatNumber(row.net_sales_sum)}` },
-                        { label: '순매출률', value: row => `${(row.net_sales_margin * 100).toFixed(1)}%` },
                         { label: '영업이익 합계', value: row => `₩${formatNumber(row.net_revenue_sum)}` },
                         { label: '영업이익률', value: row => `${(row.net_margin * 100).toFixed(1)}%` }
                     ];
@@ -1158,8 +1195,6 @@
                     columns = [
                         { label: '반기', value: row => row.half },
                         { label: '총매출 합계', value: row => `₩${formatNumber(row.product_sales_revenue_sum)}` },
-                        { label: '순매출 합계', value: row => `₩${formatNumber(row.net_sales_sum)}` },
-                        { label: '순매출률', value: row => `${(row.net_sales_margin * 100).toFixed(1)}%` },
                         { label: '영업이익 합계', value: row => `₩${formatNumber(row.net_revenue_sum)}` },
                         { label: '영업이익률', value: row => `${(row.net_margin * 100).toFixed(1)}%` }
                     ];
@@ -1169,8 +1204,6 @@
                         { label: '소재코드', value: row => `<span class="text-primary">${row.raw_cd}</span>` },
                         { label: '소재명', value: row => truncate(row.raw_nm, 25) },
                         { label: '총매출 합계', value: row => `₩${formatNumber(row.product_sales_revenue_sum)}` },
-                        { label: '순매출 합계', value: row => `₩${formatNumber(row.net_sales_sum)}` },
-                        { label: '순매출률', value: row => `${(row.net_sales_margin * 100).toFixed(1)}%` },
                         { label: '영업이익 합계', value: row => `₩${formatNumber(row.net_revenue_sum)}` },
                         { label: '영업이익률', value: row => `${(row.net_margin * 100).toFixed(1)}%` },
                         { label: '매출 비중', value: row => `${(row.revenue_share * 100).toFixed(1)}%` }
@@ -1181,8 +1214,6 @@
                         { label: '제품라인', value: row => truncate(row.product_name, 25) },
                         { label: '고객명', value: row => row.customer_name },
                         { label: '총매출 합계', value: row => `₩${formatNumber(row.product_sales_revenue_sum)}` },
-                        { label: '순매출 합계', value: row => `₩${formatNumber(row.net_sales_sum)}` },
-                        { label: '순매출률', value: row => `${(row.net_sales_margin * 100).toFixed(1)}%` },
                         { label: '영업이익 합계', value: row => `₩${formatNumber(row.net_revenue_sum)}` },
                         { label: '영업이익률', value: row => `${(row.net_margin * 100).toFixed(1)}%` },
                         { label: '매출 비중', value: row => `${(row.revenue_share * 100).toFixed(1)}%` }
@@ -1193,8 +1224,6 @@
                         { label: '고객코드', value: row => row.customer_code },
                         { label: '고객명', value: row => row.customer_name },
                         { label: '총매출 합계', value: row => `₩${formatNumber(row.product_sales_revenue_sum)}` },
-                        { label: '순매출 합계', value: row => `₩${formatNumber(row.net_sales_sum)}` },
-                        { label: '순매출률', value: row => `${(row.net_sales_margin * 100).toFixed(1)}%` },
                         { label: '영업이익 합계', value: row => `₩${formatNumber(row.net_revenue_sum)}` },
                         { label: '영업이익률', value: row => `${(row.net_margin * 100).toFixed(1)}%` },
                         { label: '매출 비중', value: row => `${(row.revenue_share * 100).toFixed(1)}%` }
@@ -1205,8 +1234,6 @@
                         { label: '제형코드', value: row => row.forml_code },
                         { label: '제형명', value: row => row.forml_name },
                         { label: '총매출 합계', value: row => `₩${formatNumber(row.product_sales_revenue_sum)}` },
-                        { label: '순매출 합계', value: row => `₩${formatNumber(row.net_sales_sum)}` },
-                        { label: '순매출률', value: row => `${(row.net_sales_margin * 100).toFixed(1)}%` },
                         { label: '영업이익 합계', value: row => `₩${formatNumber(row.net_revenue_sum)}` },
                         { label: '영업이익률', value: row => `${(row.net_margin * 100).toFixed(1)}%` },
                         { label: '매출 비중', value: row => `${(row.revenue_share * 100).toFixed(1)}%` }
@@ -1349,7 +1376,6 @@
                 { header: '고객명', key: 'customer_name', width: 20 },
                 { header: '기준월', key: 'base_time', width: 12 },
                 { header: '총매출', key: 'product_sales_revenue', width: 18, style: { numFmt: '#,##0', alignment: { horizontal: 'right' } } },
-                { header: '순매출', key: 'net_sales', width: 18, style: { numFmt: '#,##0', alignment: { horizontal: 'right' } } },
                 { header: '영업이익', key: 'net_revenue', width: 18, style: { numFmt: '#,##0', alignment: { horizontal: 'right' } } },
                 { header: '제품라인', key: 'product_name', width: 30 }
             ];
@@ -1367,8 +1393,6 @@
                         data = aggregateTotal(dedupedFilteredData);
                         columns = [
                             { header: '총매출 합계', key: 'product_sales_revenue_sum', width: 20, style: { numFmt: '#,##0', alignment: { horizontal: 'right' } } },
-                            { header: '순매출 합계', key: 'net_sales_sum', width: 20, style: { numFmt: '#,##0', alignment: { horizontal: 'right' } } },
-                            { header: '순매출률', key: 'net_sales_margin', width: 12, style: { numFmt: '0.0%', alignment: { horizontal: 'right' } } },
                             { header: '영업이익 합계', key: 'net_revenue_sum', width: 20, style: { numFmt: '#,##0', alignment: { horizontal: 'right' } } },
                             { header: '영업이익률', key: 'net_margin', width: 12, style: { numFmt: '0.0%', alignment: { horizontal: 'right' } } },
                             { header: '제품 수', key: 'mitem_code_uniq', width: 10, style: { alignment: { horizontal: 'right' } } },
@@ -1381,8 +1405,6 @@
                         columns = [
                             { header: '월', key: 'month', width: 12 },
                             { header: '총매출 합계', key: 'product_sales_revenue_sum', width: 20, style: { numFmt: '#,##0', alignment: { horizontal: 'right' } } },
-                            { header: '순매출 합계', key: 'net_sales_sum', width: 20, style: { numFmt: '#,##0', alignment: { horizontal: 'right' } } },
-                            { header: '순매출률', key: 'net_sales_margin', width: 12, style: { numFmt: '0.0%', alignment: { horizontal: 'right' } } },
                             { header: '영업이익 합계', key: 'net_revenue_sum', width: 20, style: { numFmt: '#,##0', alignment: { horizontal: 'right' } } },
                             { header: '영업이익률', key: 'net_margin', width: 12, style: { numFmt: '0.0%', alignment: { horizontal: 'right' } } }
                         ];
@@ -1392,8 +1414,6 @@
                         columns = [
                             { header: '분기', key: 'quarter', width: 12 },
                             { header: '총매출 합계', key: 'product_sales_revenue_sum', width: 20, style: { numFmt: '#,##0', alignment: { horizontal: 'right' } } },
-                            { header: '순매출 합계', key: 'net_sales_sum', width: 20, style: { numFmt: '#,##0', alignment: { horizontal: 'right' } } },
-                            { header: '순매출률', key: 'net_sales_margin', width: 12, style: { numFmt: '0.0%', alignment: { horizontal: 'right' } } },
                             { header: '영업이익 합계', key: 'net_revenue_sum', width: 20, style: { numFmt: '#,##0', alignment: { horizontal: 'right' } } },
                             { header: '영업이익률', key: 'net_margin', width: 12, style: { numFmt: '0.0%', alignment: { horizontal: 'right' } } }
                         ];
@@ -1403,8 +1423,6 @@
                         columns = [
                             { header: '반기', key: 'half', width: 12 },
                             { header: '총매출 합계', key: 'product_sales_revenue_sum', width: 20, style: { numFmt: '#,##0', alignment: { horizontal: 'right' } } },
-                            { header: '순매출 합계', key: 'net_sales_sum', width: 20, style: { numFmt: '#,##0', alignment: { horizontal: 'right' } } },
-                            { header: '순매출률', key: 'net_sales_margin', width: 12, style: { numFmt: '0.0%', alignment: { horizontal: 'right' } } },
                             { header: '영업이익 합계', key: 'net_revenue_sum', width: 20, style: { numFmt: '#,##0', alignment: { horizontal: 'right' } } },
                             { header: '영업이익률', key: 'net_margin', width: 12, style: { numFmt: '0.0%', alignment: { horizontal: 'right' } } }
                         ];
@@ -1415,8 +1433,6 @@
                             { header: '소재코드', key: 'raw_cd', width: 12 },
                             { header: '소재명', key: 'raw_nm', width: 35 },
                             { header: '총매출 합계', key: 'product_sales_revenue_sum', width: 20, style: { numFmt: '#,##0', alignment: { horizontal: 'right' } } },
-                            { header: '순매출 합계', key: 'net_sales_sum', width: 20, style: { numFmt: '#,##0', alignment: { horizontal: 'right' } } },
-                            { header: '순매출률', key: 'net_sales_margin', width: 12, style: { numFmt: '0.0%', alignment: { horizontal: 'right' } } },
                             { header: '영업이익 합계', key: 'net_revenue_sum', width: 20, style: { numFmt: '#,##0', alignment: { horizontal: 'right' } } },
                             { header: '영업이익률', key: 'net_margin', width: 12, style: { numFmt: '0.0%', alignment: { horizontal: 'right' } } },
                             { header: '총매출 비중', key: 'revenue_share', width: 12, style: { numFmt: '0.0%', alignment: { horizontal: 'right' } } },
@@ -1430,8 +1446,6 @@
                             { header: '제품라인', key: 'product_name', width: 35 },
                             { header: '고객명', key: 'customer_name', width: 20 },
                             { header: '총매출 합계', key: 'product_sales_revenue_sum', width: 20, style: { numFmt: '#,##0', alignment: { horizontal: 'right' } } },
-                            { header: '순매출 합계', key: 'net_sales_sum', width: 20, style: { numFmt: '#,##0', alignment: { horizontal: 'right' } } },
-                            { header: '순매출률', key: 'net_sales_margin', width: 12, style: { numFmt: '0.0%', alignment: { horizontal: 'right' } } },
                             { header: '영업이익 합계', key: 'net_revenue_sum', width: 20, style: { numFmt: '#,##0', alignment: { horizontal: 'right' } } },
                             { header: '영업이익률', key: 'net_margin', width: 12, style: { numFmt: '0.0%', alignment: { horizontal: 'right' } } },
                             { header: '총매출 비중', key: 'revenue_share', width: 12, style: { numFmt: '0.0%', alignment: { horizontal: 'right' } } },
@@ -1444,8 +1458,6 @@
                             { header: '고객코드', key: 'customer_code', width: 12 },
                             { header: '고객명', key: 'customer_name', width: 20 },
                             { header: '총매출 합계', key: 'product_sales_revenue_sum', width: 20, style: { numFmt: '#,##0', alignment: { horizontal: 'right' } } },
-                            { header: '순매출 합계', key: 'net_sales_sum', width: 20, style: { numFmt: '#,##0', alignment: { horizontal: 'right' } } },
-                            { header: '순매출률', key: 'net_sales_margin', width: 12, style: { numFmt: '0.0%', alignment: { horizontal: 'right' } } },
                             { header: '영업이익 합계', key: 'net_revenue_sum', width: 20, style: { numFmt: '#,##0', alignment: { horizontal: 'right' } } },
                             { header: '영업이익률', key: 'net_margin', width: 12, style: { numFmt: '0.0%', alignment: { horizontal: 'right' } } },
                             { header: '총매출 비중', key: 'revenue_share', width: 12, style: { numFmt: '0.0%', alignment: { horizontal: 'right' } } },
@@ -1458,8 +1470,6 @@
                             { header: '제형코드', key: 'forml_code', width: 12 },
                             { header: '제형명', key: 'forml_name', width: 20 },
                             { header: '총매출 합계', key: 'product_sales_revenue_sum', width: 20, style: { numFmt: '#,##0', alignment: { horizontal: 'right' } } },
-                            { header: '순매출 합계', key: 'net_sales_sum', width: 20, style: { numFmt: '#,##0', alignment: { horizontal: 'right' } } },
-                            { header: '순매출률', key: 'net_sales_margin', width: 12, style: { numFmt: '0.0%', alignment: { horizontal: 'right' } } },
                             { header: '영업이익 합계', key: 'net_revenue_sum', width: 20, style: { numFmt: '#,##0', alignment: { horizontal: 'right' } } },
                             { header: '영업이익률', key: 'net_margin', width: 12, style: { numFmt: '0.0%', alignment: { horizontal: 'right' } } },
                             { header: '총매출 비중', key: 'revenue_share', width: 12, style: { numFmt: '0.0%', alignment: { horizontal: 'right' } } },

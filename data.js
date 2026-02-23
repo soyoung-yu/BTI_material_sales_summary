@@ -186,12 +186,25 @@ RAW_SALES_DATA.push(...GENERATED_ROWS);
 
 // 숫자 포맷팅
 function formatNumber(num) {
-    return new Intl.NumberFormat('ko-KR').format(Math.round(num));
+    const value = Number(num);
+    if (!Number.isFinite(value)) return '0';
+    return new Intl.NumberFormat('ko-KR').format(Math.round(value));
 }
 
 function formatPercent(num) {
     if (isNaN(num) || !isFinite(num)) return '0.0%';
     return (num * 100).toFixed(1) + '%';
+}
+
+function toNumber(value) {
+    const num = Number(value);
+    return Number.isFinite(num) ? num : 0;
+}
+
+function safeDivide(numerator, denominator) {
+    const d = toNumber(denominator);
+    if (d === 0) return 0;
+    return toNumber(numerator) / d;
 }
 
 // 제품 매출 중복 판별 키
@@ -285,8 +298,8 @@ function aggregateTotal(data) {
         if (!seen.has(key)) {
             seen.add(key);
             totalRevenue += row.product_sales_revenue;
-            totalNetSales += row.net_sales;
-            totalNet += row.net_revenue;
+            totalNetSales += toNumber(row.net_sales);
+            totalNet += toNumber(row.net_revenue);
         }
         uniqueProducts.add(row.mitem_code);
         uniqueMaterials.add(row.raw_cd);
@@ -297,8 +310,8 @@ function aggregateTotal(data) {
         product_sales_revenue_sum: totalRevenue,
         net_sales_sum: totalNetSales,
         net_revenue_sum: totalNet,
-        net_sales_margin: totalNetSales / totalRevenue,
-        net_margin: totalNet / totalRevenue,
+        net_sales_margin: safeDivide(totalNetSales, totalRevenue),
+        net_margin: safeDivide(totalNet, totalRevenue),
         mitem_code_uniq: uniqueProducts.size,
         raw_cd_uniq: uniqueMaterials.size,
         customer_code_uniq: uniqueCustomers.size
@@ -321,9 +334,9 @@ function aggregateByMonth(data) {
 
         if (!seen[month].has(key)) {
             seen[month].add(key);
-            grouped[month].product_sales_revenue_sum += row.product_sales_revenue;
-            grouped[month].net_sales_sum += row.net_sales;
-            grouped[month].net_revenue_sum += row.net_revenue;
+            grouped[month].product_sales_revenue_sum += toNumber(row.product_sales_revenue);
+            grouped[month].net_sales_sum += toNumber(row.net_sales);
+            grouped[month].net_revenue_sum += toNumber(row.net_revenue);
         }
     });
 
@@ -331,8 +344,8 @@ function aggregateByMonth(data) {
         .map(([month, vals]) => ({
             month,
             ...vals,
-            net_sales_margin: vals.net_sales_sum / vals.product_sales_revenue_sum,
-            net_margin: vals.net_revenue_sum / vals.product_sales_revenue_sum
+            net_sales_margin: safeDivide(vals.net_sales_sum, vals.product_sales_revenue_sum),
+            net_margin: safeDivide(vals.net_revenue_sum, vals.product_sales_revenue_sum)
         }))
         .sort((a, b) => a.month.localeCompare(b.month));
 }
@@ -356,9 +369,9 @@ function aggregateByQuarter(data) {
 
         if (!seen[qKey].has(key)) {
             seen[qKey].add(key);
-            grouped[qKey].product_sales_revenue_sum += row.product_sales_revenue;
-            grouped[qKey].net_sales_sum += row.net_sales;
-            grouped[qKey].net_revenue_sum += row.net_revenue;
+            grouped[qKey].product_sales_revenue_sum += toNumber(row.product_sales_revenue);
+            grouped[qKey].net_sales_sum += toNumber(row.net_sales);
+            grouped[qKey].net_revenue_sum += toNumber(row.net_revenue);
         }
     });
 
@@ -366,8 +379,8 @@ function aggregateByQuarter(data) {
         .map(([quarter, vals]) => ({
             quarter,
             ...vals,
-            net_sales_margin: vals.net_sales_sum / vals.product_sales_revenue_sum,
-            net_margin: vals.net_revenue_sum / vals.product_sales_revenue_sum
+            net_sales_margin: safeDivide(vals.net_sales_sum, vals.product_sales_revenue_sum),
+            net_margin: safeDivide(vals.net_revenue_sum, vals.product_sales_revenue_sum)
         }))
         .sort((a, b) => a.quarter.localeCompare(b.quarter));
 }
@@ -391,9 +404,9 @@ function aggregateByHalf(data) {
 
         if (!seen[hKey].has(key)) {
             seen[hKey].add(key);
-            grouped[hKey].product_sales_revenue_sum += row.product_sales_revenue;
-            grouped[hKey].net_sales_sum += row.net_sales;
-            grouped[hKey].net_revenue_sum += row.net_revenue;
+            grouped[hKey].product_sales_revenue_sum += toNumber(row.product_sales_revenue);
+            grouped[hKey].net_sales_sum += toNumber(row.net_sales);
+            grouped[hKey].net_revenue_sum += toNumber(row.net_revenue);
         }
     });
 
@@ -401,8 +414,8 @@ function aggregateByHalf(data) {
         .map(([half, vals]) => ({
             half,
             ...vals,
-            net_sales_margin: vals.net_sales_sum / vals.product_sales_revenue_sum,
-            net_margin: vals.net_revenue_sum / vals.product_sales_revenue_sum
+            net_sales_margin: safeDivide(vals.net_sales_sum, vals.product_sales_revenue_sum),
+            net_margin: safeDivide(vals.net_revenue_sum, vals.product_sales_revenue_sum)
         }))
         .sort((a, b) => a.half.localeCompare(b.half));
 }
@@ -424,9 +437,9 @@ function aggregateByMaterial(data) {
                 products: new Set()
             };
         }
-        grouped[key].product_sales_revenue_sum += row.product_sales_revenue;
-        grouped[key].net_sales_sum += row.net_sales;
-        grouped[key].net_revenue_sum += row.net_revenue;
+        grouped[key].product_sales_revenue_sum += toNumber(row.product_sales_revenue);
+        grouped[key].net_sales_sum += toNumber(row.net_sales);
+        grouped[key].net_revenue_sum += toNumber(row.net_revenue);
         grouped[key].products.add(row.mitem_code);
     });
 
@@ -446,8 +459,8 @@ function aggregateByMaterial(data) {
             product_sales_revenue_sum: vals.product_sales_revenue_sum,
             net_sales_sum: vals.net_sales_sum,
             net_revenue_sum: vals.net_revenue_sum,
-            net_sales_margin: vals.net_sales_sum / vals.product_sales_revenue_sum,
-            net_margin: vals.net_revenue_sum / vals.product_sales_revenue_sum,
+            net_sales_margin: safeDivide(vals.net_sales_sum, vals.product_sales_revenue_sum),
+            net_margin: safeDivide(vals.net_revenue_sum, vals.product_sales_revenue_sum),
             revenue_share: totalWithDuplicate > 0
                 ? vals.product_sales_revenue_sum / totalWithDuplicate
                 : 0,
@@ -485,9 +498,9 @@ function aggregateByProductLine(data) {
 
         if (!seen[pKey].has(key)) {
             seen[pKey].add(key);
-            grouped[pKey].product_sales_revenue_sum += row.product_sales_revenue;
-            grouped[pKey].net_sales_sum += row.net_sales;
-            grouped[pKey].net_revenue_sum += row.net_revenue;
+            grouped[pKey].product_sales_revenue_sum += toNumber(row.product_sales_revenue);
+            grouped[pKey].net_sales_sum += toNumber(row.net_sales);
+            grouped[pKey].net_revenue_sum += toNumber(row.net_revenue);
         }
         grouped[pKey].items.add(row.mitem_code);
     });
@@ -502,9 +515,9 @@ function aggregateByProductLine(data) {
             product_sales_revenue_sum: vals.product_sales_revenue_sum,
             net_sales_sum: vals.net_sales_sum,
             net_revenue_sum: vals.net_revenue_sum,
-            net_sales_margin: vals.net_sales_sum / vals.product_sales_revenue_sum,
-            net_margin: vals.net_revenue_sum / vals.product_sales_revenue_sum,
-            revenue_share: vals.product_sales_revenue_sum / dedupTotal,
+            net_sales_margin: safeDivide(vals.net_sales_sum, vals.product_sales_revenue_sum),
+            net_margin: safeDivide(vals.net_revenue_sum, vals.product_sales_revenue_sum),
+            revenue_share: safeDivide(vals.product_sales_revenue_sum, dedupTotal),
             item_count: vals.items.size
         }))
         .sort((a, b) => b.product_sales_revenue_sum - a.product_sales_revenue_sum);
@@ -533,9 +546,9 @@ function aggregateByCustomer(data) {
 
         if (!seen[cKey].has(key)) {
             seen[cKey].add(key);
-            grouped[cKey].product_sales_revenue_sum += row.product_sales_revenue;
-            grouped[cKey].net_sales_sum += row.net_sales;
-            grouped[cKey].net_revenue_sum += row.net_revenue;
+            grouped[cKey].product_sales_revenue_sum += toNumber(row.product_sales_revenue);
+            grouped[cKey].net_sales_sum += toNumber(row.net_sales);
+            grouped[cKey].net_revenue_sum += toNumber(row.net_revenue);
         }
         grouped[cKey].products.add(row.mitem_code);
     });
@@ -550,9 +563,9 @@ function aggregateByCustomer(data) {
             product_sales_revenue_sum: vals.product_sales_revenue_sum,
             net_sales_sum: vals.net_sales_sum,
             net_revenue_sum: vals.net_revenue_sum,
-            net_sales_margin: vals.net_sales_sum / vals.product_sales_revenue_sum,
-            net_margin: vals.net_revenue_sum / vals.product_sales_revenue_sum,
-            revenue_share: vals.product_sales_revenue_sum / dedupTotal,
+            net_sales_margin: safeDivide(vals.net_sales_sum, vals.product_sales_revenue_sum),
+            net_margin: safeDivide(vals.net_revenue_sum, vals.product_sales_revenue_sum),
+            revenue_share: safeDivide(vals.product_sales_revenue_sum, dedupTotal),
             product_unique_cnt: vals.products.size
         }))
         .sort((a, b) => b.product_sales_revenue_sum - a.product_sales_revenue_sum);
@@ -581,9 +594,9 @@ function aggregateByFormulation(data) {
 
         if (!seen[fKey].has(key)) {
             seen[fKey].add(key);
-            grouped[fKey].product_sales_revenue_sum += row.product_sales_revenue;
-            grouped[fKey].net_sales_sum += row.net_sales;
-            grouped[fKey].net_revenue_sum += row.net_revenue;
+            grouped[fKey].product_sales_revenue_sum += toNumber(row.product_sales_revenue);
+            grouped[fKey].net_sales_sum += toNumber(row.net_sales);
+            grouped[fKey].net_revenue_sum += toNumber(row.net_revenue);
         }
         grouped[fKey].products.add(row.mitem_code);
     });
@@ -598,9 +611,9 @@ function aggregateByFormulation(data) {
             product_sales_revenue_sum: vals.product_sales_revenue_sum,
             net_sales_sum: vals.net_sales_sum,
             net_revenue_sum: vals.net_revenue_sum,
-            net_sales_margin: vals.net_sales_sum / vals.product_sales_revenue_sum,
-            net_margin: vals.net_revenue_sum / vals.product_sales_revenue_sum,
-            revenue_share: vals.product_sales_revenue_sum / dedupTotal,
+            net_sales_margin: safeDivide(vals.net_sales_sum, vals.product_sales_revenue_sum),
+            net_margin: safeDivide(vals.net_revenue_sum, vals.product_sales_revenue_sum),
+            revenue_share: safeDivide(vals.product_sales_revenue_sum, dedupTotal),
             product_unique_cnt: vals.products.size
         }))
         .sort((a, b) => b.product_sales_revenue_sum - a.product_sales_revenue_sum);

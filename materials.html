@@ -709,10 +709,12 @@
     </div>
 
     <script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="api-config.js"></script>
+    <script src="api-client.js"></script>
     <script src="data.js"></script>
     <script>
         // State
-        let materials = [...MATERIALS];
+        let materials = [];
         let currentPage = 1;
         const pageSize = 10;
         let filteredMaterials = [];
@@ -725,10 +727,34 @@
         const paginationControls = document.getElementById('paginationControls');
 
         // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
-            filterAndRender();
+        document.addEventListener('DOMContentLoaded', async () => {
+            await initializeMaterials();
             setupEventListeners();
         });
+
+        async function initializeMaterials() {
+            try {
+                if (window.BTIApiClient?.isConfigured()) {
+                    const response = await window.BTIApiClient.getMaterials();
+                    materials = Array.isArray(response?.rows) ? response.rows : [];
+                } else if (typeof MATERIALS !== 'undefined') {
+                    materials = [...MATERIALS];
+                } else {
+                    materials = [];
+                }
+            } catch (error) {
+                console.error(error);
+                if (typeof MATERIALS !== 'undefined') {
+                    materials = [...MATERIALS];
+                    showToast('API 조회 실패로 샘플 소재 데이터를 표시합니다.');
+                } else {
+                    materials = [];
+                    showToast(error.message || '소재 데이터를 불러오지 못했습니다.');
+                }
+            }
+
+            filterAndRender();
+        }
 
         function setupEventListeners() {
             searchInput.addEventListener('input', () => {

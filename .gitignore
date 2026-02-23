@@ -6,3 +6,13 @@
 *.csv
 # sample 파일만 예외 허용
 !sample_df.csv
+
+# Python cache
+__pycache__/
+*.pyc
+
+# macOS
+.DS_Store
+
+# generated test outputs
+out/

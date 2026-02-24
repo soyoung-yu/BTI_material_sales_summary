@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>관리자 - BTI 소재 매출 리포트</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:#f8fafc; color:#0f172a; }
+        .header { background:#1a365d; color:#fff; padding:16px 24px; display:flex; justify-content:space-between; align-items:center; }
+        .header h1 { margin:0; font-size:20px; }
+        .user-info { display:flex; align-items:center; gap:8px; }
+        .team-badge { background:rgba(255,255,255,.16); padding:4px 10px; border-radius:999px; font-size:12px; }
+        .nav { background:#fff; border-bottom:1px solid #e2e8f0; }
+        .nav ul { margin:0; padding:0 24px; list-style:none; display:flex; gap:8px; }
+        .nav a { display:block; padding:14px 16px; text-decoration:none; color:#475569; border-bottom:2px solid transparent; }
+        .nav a.active { color:#1a365d; border-bottom-color:#1a365d; font-weight:600; }
+        .main { padding:24px; max-width:1100px; margin:0 auto; }
+        .page-header { margin-bottom:18px; }
+        .page-title { margin:0 0 6px; font-size:24px; }
+        .page-desc { margin:0; color:#64748b; }
+        .grid { display:grid; grid-template-columns: 1fr 1fr; gap:16px; align-items:start; }
+        .card { background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:16px; }
+        .card h3 { margin:0 0 12px; font-size:16px; }
+        .field { display:flex; flex-direction:column; gap:6px; margin-bottom:10px; }
+        .field input, .field select { padding:10px 12px; border:1px solid #cbd5e1; border-radius:8px; }
+        .actions { display:flex; justify-content:flex-end; gap:8px; margin-top:8px; }
+        .btn { border:1px solid #cbd5e1; background:#fff; color:#0f172a; padding:10px 12px; border-radius:8px; cursor:pointer; }
+        .btn.primary { background:#1a365d; color:#fff; border-color:#1a365d; }
+        .muted { color:#64748b; font-size:13px; }
+        table { width:100%; border-collapse:collapse; font-size:13px; }
+        th, td { border-bottom:1px solid #e2e8f0; padding:10px 8px; text-align:left; }
+        th { color:#475569; background:#f8fafc; }
+        .row-actions{display:flex;gap:6px;flex-wrap:wrap}
+        .btn.sm{padding:6px 8px;font-size:12px}
+        .btn.danger{color:#b91c1c;border-color:#fecaca;background:#fff5f5}
+        .toast { position:fixed; right:24px; bottom:24px; background:#1a365d; color:#fff; padding:12px 16px; border-radius:8px; opacity:0; transform:translateY(8px); transition:.2s; }
+        .toast.show { opacity:1; transform:translateY(0); }
+        @media (max-width: 900px) { .grid { grid-template-columns:1fr; } }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>BTI 소재 매출 리포트</h1>
+        <div class="user-info"></div>
+    </header>
+
+    <nav class="nav"><ul></ul></nav>
+
+    <main class="main">
+        <div class="page-header">
+            <h2 class="page-title">관리자</h2>
+            <p class="page-desc">일반 계정(팀 관리자/팀원)을 생성하고 계정 목록을 확인합니다.</p>
+        </div>
+
+        <div class="grid">
+            <section class="card">
+                <h3>일반 계정 생성</h3>
+                <div class="field"><label>로그인 ID</label><input id="loginId" type="text"></div>
+                <div class="field"><label>비밀번호</label><input id="password" type="password"></div>
+                <div class="field"><label>이름</label><input id="name" type="text"></div>
+                <div class="field"><label>팀 ID</label><input id="teamId" type="text" placeholder="예: MB2"></div>
+                <div class="field"><label>팀명</label><input id="teamName" type="text" placeholder="예: MB2팀"></div>
+                <div class="field">
+                    <label>권한</label>
+                    <select id="role">
+                        <option value="TEAM_MEMBER">팀원</option>
+                        <option value="TEAM_ADMIN">팀 관리자</option>
+                    </select>
+                </div>
+                <div class="actions">
+                    <button class="btn primary" id="createAccountBtn">계정 생성</button>
+                </div>
+                <p class="muted">관리자 탭에서는 일반 계정만 생성할 수 있습니다.</p>
+            </section>
+
+            <section class="card">
+                <h3>계정 목록</h3>
+                <div id="accountCount" class="muted" style="margin-bottom:8px;"></div>
+                <div style="overflow:auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>이름</th>
+                                <th>팀</th>
+                                <th>권한</th>
+                                <th>상태</th>
+                                <th>관리</th>
+                            </tr>
+                        </thead>
+                        <tbody id="accountsTbody"></tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <div class="toast" id="toast"></div>
+
+    <script src="api-config.js"></script>
+    <script src="api-client.js"></script>
+    <script src="auth.js"></script>
+    <script>
+        let currentUser = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const auth = window.BTIAuth.bootstrap({ page: 'admin' });
+            if (auth?.denied) return;
+            currentUser = auth.user;
+            document.getElementById('createAccountBtn').addEventListener('click', onCreateAccount);
+            await renderAccounts();
+        });
+
+        async function renderAccounts() {
+            const rows = await window.BTIAuth.listAccounts();
+            document.getElementById('accountCount').textContent = `총 ${rows.length}개 계정`;
+            document.getElementById('accountsTbody').innerHTML = rows.map(a => `
+                <tr>
+                    <td>${a.login_id}</td>
+                    <td>${a.name}</td>
+                    <td>${a.team_name || a.team_id}</td>
+                    <td>${a.role}</td>
+                    <td>${a.active === false ? '비활성' : '활성'}</td>
+                    <td>
+                        ${a.role === 'ADMIN'
+                            ? '<span class="muted">기본 관리자 계정</span>'
+                            : `<div class="row-actions">
+                                <button class="btn sm" data-reset="${a.account_id}">비밀번호 초기화</button>
+                                <button class="btn sm danger" data-delete="${a.account_id}">삭제</button>
+                              </div>`}
+                    </td>
+                </tr>
+            `).join('');
+
+            document.querySelectorAll('[data-reset]').forEach(btn => {
+                btn.addEventListener('click', () => onResetPassword(btn.dataset.reset));
+            });
+            document.querySelectorAll('[data-delete]').forEach(btn => {
+                btn.addEventListener('click', () => onDeleteAccount(btn.dataset.delete));
+            });
+        }
+
+        async function onCreateAccount() {
+            try {
+                await window.BTIAuth.createAccount({
+                    login_id: document.getElementById('loginId').value,
+                    password: document.getElementById('password').value,
+                    name: document.getElementById('name').value,
+                    team_id: document.getElementById('teamId').value,
+                    team_name: document.getElementById('teamName').value,
+                    role: document.getElementById('role').value,
+                    active: true
+                });
+                ['loginId','password','name','teamId','teamName'].forEach(id => document.getElementById(id).value = '');
+                await renderAccounts();
+                showToast('계정이 생성되었습니다.');
+            } catch (err) {
+                showToast(err.message || '계정 생성에 실패했습니다.');
+            }
+        }
+
+        async function onResetPassword(accountId) {
+            try {
+                const target = (await window.BTIAuth.listAccounts()).find(a => a.account_id === accountId);
+                if (!target) throw new Error('계정을 찾을 수 없습니다.');
+                const ok = confirm(`${target.login_id} 계정의 비밀번호를 초기화하시겠습니까?\n초기화 비밀번호: ${window.BTIAuth.DEFAULT_RESET_PASSWORD}`);
+                if (!ok) return;
+                await window.BTIAuth.resetPassword(accountId);
+                showToast(`비밀번호가 초기화되었습니다. (${window.BTIAuth.DEFAULT_RESET_PASSWORD})`);
+            } catch (err) {
+                showToast(err.message || '비밀번호 초기화에 실패했습니다.');
+            }
+        }
+
+        async function onDeleteAccount(accountId) {
+            try {
+                const target = (await window.BTIAuth.listAccounts()).find(a => a.account_id === accountId);
+                if (!target) throw new Error('계정을 찾을 수 없습니다.');
+                const ok = confirm(`${target.login_id} 계정을 삭제하시겠습니까?`);
+                if (!ok) return;
+                await window.BTIAuth.deleteAccount(accountId);
+                await renderAccounts();
+                showToast('계정이 삭제되었습니다.');
+            } catch (err) {
+                showToast(err.message || '계정 삭제에 실패했습니다.');
+            }
+        }
+
+        function showToast(message) {
+            const el = document.getElementById('toast');
+            el.textContent = message;
+            el.classList.add('show');
+            setTimeout(() => el.classList.remove('show'), 2200);
+        }
+    </script>
+</body>
+</html>

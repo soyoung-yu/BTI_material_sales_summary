@@ -1,3 +1,6 @@
+import base64
+import hashlib
+import hmac
 import json
 import os
 from datetime import datetime
@@ -12,6 +15,7 @@ REPORT_KEY = os.environ.get('BTI_REPORT_LATEST_KEY', 'report/latest.json')
 MATERIALS_KEY = os.environ.get('BTI_MATERIALS_LATEST_KEY', 'materials/latest.json')
 META_KEY = os.environ.get('BTI_META_LATEST_KEY', 'meta/latest.json')
 ALLOWED_ORIGIN = os.environ.get('ALLOWED_ORIGIN', '*')
+AUTH_SECRET = os.environ.get('BTI_AUTH_SECRET', 'dev-change-this-secret')
 
 
 def _response(status: int, body: Dict[str, Any]) -> Dict[str, Any]:
@@ -21,7 +25,7 @@ def _response(status: int, body: Dict[str, Any]) -> Dict[str, Any]:
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
             'Access-Control-Allow-Methods': 'GET,OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type'
+            'Access-Control-Allow-Headers': 'Content-Type,Authorization'
         },
         'body': json.dumps(body, ensure_ascii=False, default=str)
     }
@@ -79,12 +83,51 @@ def _route(event: Dict[str, Any]) -> str:
     return raw_path.rstrip('/') or '/'
 
 
+def _b64url_decode(text: str) -> bytes:
+    padded = text + '=' * (-len(text) % 4)
+    return base64.urlsafe_b64decode(padded.encode('ascii'))
+
+
+def _verify_token(token: str) -> Dict[str, Any]:
+    try:
+        header_b64, payload_b64, sig_b64 = token.split('.', 2)
+    except ValueError as exc:
+        raise PermissionError('유효하지 않은 토큰 형식입니다.') from exc
+    signing_input = f'{header_b64}.{payload_b64}'.encode('ascii')
+    expected = hmac.new(AUTH_SECRET.encode('utf-8'), signing_input, hashlib.sha256).digest()
+    actual = _b64url_decode(sig_b64)
+    if not hmac.compare_digest(expected, actual):
+        raise PermissionError('유효하지 않은 토큰입니다.')
+    payload = json.loads(_b64url_decode(payload_b64))
+    exp = int(payload.get('exp', 0) or 0)
+    if exp and exp < int(datetime.utcnow().timestamp()):
+        raise PermissionError('토큰이 만료되었습니다.')
+    return payload
+
+
+def _get_bearer_token(event: Dict[str, Any]) -> str:
+    headers = event.get('headers') or {}
+    auth = headers.get('Authorization') or headers.get('authorization') or ''
+    if not str(auth).lower().startswith('bearer '):
+        raise PermissionError('인증 토큰이 필요합니다.')
+    token = str(auth)[7:].strip()
+    if not token:
+        raise PermissionError('인증 토큰이 필요합니다.')
+    return token
+
+
+def _require_auth(event: Dict[str, Any]) -> Dict[str, Any]:
+    token = _get_bearer_token(event)
+    return _verify_token(token)
+
+
 def lambda_handler(event: Dict[str, Any], _context: Any) -> Dict[str, Any]:
     method = (event.get('requestContext', {}).get('http', {}) or {}).get('method') or event.get('httpMethod', 'GET')
     if method == 'OPTIONS':
         return _response(200, {'ok': True})
 
     try:
+        _require_auth(event)
         path = _route(event)
         query = event.get('queryStringParameters') or {}
 
@@ -116,5 +159,7 @@ def lambda_handler(event: Dict[str, Any], _context: Any) -> Dict[str, Any]:
             return _response(200, payload if isinstance(payload, dict) else {'status': 'unknown'})
 
         return _response(404, {'message': f'Unknown path: {path}'})
+    except PermissionError as exc:
+        return _response(403, {'message': str(exc)})
     except Exception as exc:
         return _response(500, {'message': str(exc)})

@@ -794,10 +794,12 @@
     <script src="api-config.js"></script>
     <script src="api-client.js"></script>
     <script src="data.js"></script>
+    <script src="auth.js"></script>
     <script>
         // State
         let filteredData = [];
         let aggregatedData = {};
+        let currentUser = null;
 
         // DOM Elements
         const startDateInput = document.getElementById('startDate');
@@ -842,6 +844,8 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
+            const auth = window.BTIAuth?.bootstrap({ page: 'index' });
+            currentUser = auth?.user || null;
             await initQuickSelects();
             updateSheetTags();
             setupEventListeners();
@@ -1066,6 +1070,11 @@
         }
 
         async function calculateData() {
+            if (!currentUser) {
+                showToast('로그인 후 데이터를 조회할 수 있습니다.');
+                window.BTIAuth?.openLoginModal?.();
+                return;
+            }
             const startDate = startDateInput.value;
             const endDate = endDateInput.value;
 

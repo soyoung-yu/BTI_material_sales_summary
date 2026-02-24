@@ -27,6 +27,21 @@ def _batch_id() -> str:
     return datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')
 
 
+def _extract_available_years(report_rows: Any) -> list[int]:
+    years = set()
+    for row in report_rows or []:
+        if not isinstance(row, dict):
+            continue
+        base_time = str(row.get('base_time', '')).strip()
+        if len(base_time) < 4:
+            continue
+        try:
+            years.add(int(base_time[:4]))
+        except ValueError:
+            continue
+    return sorted(years, reverse=True)
+
+
 def lambda_handler(event: Dict[str, Any], _context: Any) -> Dict[str, Any]:
     if not DATA_BUCKET:
         raise RuntimeError('BTI_DATA_BUCKET 환경변수가 설정되지 않았습니다.')
@@ -61,6 +76,7 @@ def lambda_handler(event: Dict[str, Any], _context: Any) -> Dict[str, Any]:
             'lastSuccessAt': started_at,
             'reportRowCount': len(report_rows),
             'materialsRowCount': len(material_rows),
+            'availableYears': _extract_available_years(report_rows),
             'pipeline': pipeline_meta,
         }
 

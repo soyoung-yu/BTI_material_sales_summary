@@ -1,10 +1,13 @@
 import json
 import logging
 import os
+from io import BytesIO
+from urllib.parse import urlparse
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
 from typing import Any, Dict, List, Tuple
 
+import boto3
 import pandas as pd
 
 from backend.batch.queries import build_bom_query, build_revenue_query
@@ -47,7 +50,11 @@ def _resolve_date_range(event: Dict[str, Any]) -> Tuple[str, str]:
     end_date = event.get('endDate') or os.environ.get('REPORT_END_DATE')
 
     if start_date and end_date:
-        return str(start_date), str(end_date)
+        return _to_date(start_date).isoformat(), _to_date(end_date).isoformat()
+
+    if start_date and not end_date:
+        end = _utc_today() - timedelta(days=1)
+        return _to_date(start_date).isoformat(), end.isoformat()
 
     lookback_months = int(os.environ.get('BATCH_LOOKBACK_MONTHS', '24'))
     today = _utc_today()
@@ -88,7 +95,13 @@ def query_athena(query: str, database: str) -> pd.DataFrame:
 
 def read_materials_excel(s3_path: str) -> pd.DataFrame:
     logger.info('Load materials excel from %s', s3_path)
-    df = pd.read_excel(s3_path, engine='openpyxl')
+    parsed = urlparse(s3_path)
+    if parsed.scheme != 's3' or not parsed.netloc or not parsed.path:
+        raise ValueError(f'유효한 S3 경로가 아닙니다: {s3_path}')
+
+    s3 = boto3.client('s3')
+    obj = s3.get_object(Bucket=parsed.netloc, Key=parsed.path.lstrip('/'))
+    df = pd.read_excel(BytesIO(obj['Body'].read()), engine='openpyxl')
     if 'raw_cd' not in df.columns:
         # 운영 엑셀 컬럼명 대응 (원료코드/원료명 등)
         rename_map = {}

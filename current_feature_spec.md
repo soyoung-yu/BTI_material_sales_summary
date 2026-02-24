@@ -6,13 +6,13 @@
 - 기간을 선택해 매출 데이터를 조회하고 요약 리포트를 미리보기/엑셀로 다운로드한다.
 - 팀 소재 목록을 조회하고 소재 추가/수정/삭제 요청을 등록한다.
 - 관리자/팀 관리자가 소재 요청을 승인한다.
-- 관리자는 일반 계정(팀 관리자/팀원)을 생성/삭제/비밀번호 초기화한다.
+- 관리자는 팀을 생성/수정/비활성/삭제하고, 일반 계정(팀 관리자/팀원)을 생성/삭제/비밀번호 초기화한다.
 
 ### 1.2 화면 구성 (현재 구현)
 - `index.html`: 리포트 생성/미리보기/엑셀 다운로드
 - `materials.html`: 소재 목록 조회 + 소재 요청 등록
 - `approvals.html`: 승인 요청 조회/승인
-- `admin.html`: 계정 목록 조회/생성/삭제/비밀번호 초기화 (관리자 전용)
+- `admin.html`: 팀 관리 + 계정 목록 조회/생성/삭제/비밀번호 초기화 (관리자 전용)
 
 ### 1.3 역할 (현재 구현)
 - `ADMIN` (관리자)
@@ -44,6 +44,7 @@
 3. 쓰기 Lambda(`write_handler`)가 토큰과 역할을 검증한다.
 4. S3 JSON에 계정/요청 데이터를 저장 또는 갱신한다.
 5. 승인 시 `materials/latest.json`에 실제 소재 목록 반영까지 수행한다.
+6. 팀 관리 시 `auth/teams.json`에 팀 마스터를 저장/갱신하고, 팀 삭제 시 해당 팀 계정을 일괄 삭제한다.
 
 ### 2.3 데이터 소스 우선순위 (프론트)
 - 1순위: API (`api-config.js` 또는 `localStorage.BTI_API_BASE_URL` 설정 시)
@@ -77,6 +78,10 @@
 - `GET /bti_revenue/data-status` → 빠른선택 연도 목록
 - `GET /bti_revenue/report-data?startDate=...&endDate=...` → 리포트 원천 데이터
 - 프론트(`data.js`)에서 집계 계산 후 미리보기/엑셀 생성
+
+### 팀 범위 규칙 (현재 구현)
+- `ADMIN`: 전체 팀 리포트 조회
+- `TEAM_ADMIN`, `TEAM_MEMBER`: 본인 팀 소재(`raw_cd`) 기준 row만 조회
 
 ### 현재 구현상 중요한 용어
 - UI 라벨은 `순매출`
@@ -112,6 +117,7 @@
 ### 현재 구현 메모
 - API 모드에서는 요청 생성 후 목록은 `/materials` 재조회로 갱신
 - 승인 전 요청은 `승인 요청` 탭에서 처리
+- `ADMIN`은 전체 팀 소재 목록 조회, 일반 사용자는 본인 팀 소재만 조회
 
 ---
 
@@ -140,24 +146,43 @@
 ## 3.4 관리자 화면 (`admin.html`)
 
 ### 목적
-- 일반 계정(팀 관리자/팀원) 관리
+- 팀 마스터 관리 + 일반 계정(팀 관리자/팀원) 관리
 
 ### 접근 권한
 - `ADMIN`만 접근 가능
 - 그 외 사용자/미로그인: 접근 불가
 
 ### 주요 기능
+#### 팀 관리
+- 팀 목록 조회
+- 팀 생성
+- 팀명 수정
+- 팀 비활성화
+- 팀 삭제 (해당 팀 계정 일괄 삭제)
+
+#### 계정 관리
 - 계정 목록 조회
 - 일반 계정 생성 (`TEAM_ADMIN`, `TEAM_MEMBER`)
 - 일반 계정 비밀번호 초기화
 - 일반 계정 삭제
 
 ### 현재 구현 규칙
+- `HQ`는 시스템 팀으로 수정/비활성화/삭제 대상 아님
+- 계정 생성 시 팀은 직접입력이 아니라 `팀 선택` 드롭다운으로만 지정
+- 계정 생성 드롭다운에는 활성 팀만 표시되며 `HQ`는 제외
+- 비활성 팀은 계정 생성 대상에서 제외
+- 팀 비활성화는 해당 팀에 활성 계정이 있으면 차단
+- 팀 삭제 시 해당 `team_id` 계정이 일괄 삭제됨 (cascade)
 - 관리자(`ADMIN`) 계정은 관리자 화면에서 삭제 불가
 - 관리자(`ADMIN`) 계정은 관리자 화면에서 비밀번호 초기화 대상 아님
 - 초기화 비밀번호 기본값: `firstpassword`
 
 ### 데이터 흐름
+- `GET /bti_revenue/admin/teams`
+- `POST /bti_revenue/admin/teams`
+- `PATCH /bti_revenue/admin/teams/{teamId}`
+- `POST /bti_revenue/admin/teams/{teamId}/deactivate`
+- `DELETE /bti_revenue/admin/teams/{teamId}` (팀 삭제 + 계정 일괄 삭제)
 - `GET /bti_revenue/admin/accounts`
 - `POST /bti_revenue/admin/accounts`
 - `POST /bti_revenue/admin/accounts/{accountId}/reset-password`
@@ -233,6 +258,13 @@
 - `DELETE /bti_revenue/admin/accounts/{accountId}`
 - `POST /bti_revenue/admin/accounts/{accountId}/reset-password`
 
+### 관리자 팀 관리
+- `GET /bti_revenue/admin/teams`
+- `POST /bti_revenue/admin/teams`
+- `PATCH /bti_revenue/admin/teams/{teamId}`
+- `POST /bti_revenue/admin/teams/{teamId}/deactivate`
+- `DELETE /bti_revenue/admin/teams/{teamId}`
+
 ### 소재 요청/승인
 - `GET /bti_revenue/materials/requests`
 - `POST /bti_revenue/materials/requests`
@@ -254,6 +286,7 @@
 
 ### 쓰기 API 데이터
 - `auth/accounts.json` : 계정 목록
+- `auth/teams.json` : 팀 마스터 목록
 - `materials/requests_store.json` : 승인 요청 목록/상태
 
 > 실제 버킷/경로 prefix는 환경변수(`BTI_*`)로 결정됨
@@ -293,6 +326,8 @@
 - `researcher`
 - `created`
 - `approval_status`
+- `team_id`
+- `team_name`
 
 ## 7.3 승인 요청 row (쓰기 API 기준)
 - `request_id`
@@ -314,6 +349,14 @@
 - `active`
 - (서버 저장 시) `password`는 해시 저장
 
+## 7.5 팀 row (쓰기 API 기준)
+- `team_id`
+- `team_name`
+- `active`
+- `is_system` (`HQ` 등 시스템 팀)
+- `created_at`, `updated_at`
+- `created_by_*`
+
 ---
 
 ## 8. 현재 제약사항 / 운영 주의사항
@@ -330,9 +373,12 @@
 - 현재는 `승인`만 구현
 - `반려`/반려사유는 미구현
 
-## 8.4 리포트 데이터 권한 범위
+## 8.4 리포트/소재 데이터 팀 분리 기준
 - 로그인 여부/역할 기반 조회 허용은 구현됨
-- 팀별 리포트 데이터 필터링(예: 팀원은 본인 팀 데이터만)은 미구현
+- `ADMIN`: 전체 팀 데이터 조회
+- `TEAM_ADMIN`, `TEAM_MEMBER`: 본인 팀 데이터만 조회
+- 리포트 팀 분리 기준은 `raw_cd -> 소재(team_id)` 매핑 기준
+- 팀 정보가 없는 기존 소재 row는 호환을 위해 `MB2`로 기본 보정됨
 
 ## 8.5 fallback 로직 존재
 - API 미설정/실패 시 일부 화면은 샘플 또는 localStorage fallback 사용 가능
@@ -363,10 +409,14 @@
 
 ## 9.4 관리자 계정 관리
 - 계정 목록 조회
+- 팀 목록 조회/생성/수정/비활성화/삭제
 - 일반 계정 생성
+  - 팀 선택 드롭다운(활성 팀만, `HQ` 제외)
 - 일반 계정 비밀번호 초기화 (`firstpassword`)
 - 일반 계정 삭제
+- 팀 삭제 시 해당 팀 계정 일괄 삭제(cascade)
 - 관리자 계정은 삭제/초기화 제한이 적용되는지
+- 활성 계정이 있는 팀 비활성화 차단 동작 확인
 
 ## 9.5 CORS/API 배포
 - 브라우저에서 `Failed to fetch` 없이 동작하는지

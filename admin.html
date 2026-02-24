@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>관리자 - BTI 소재 매출 리포트</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <style>
         * { box-sizing: border-box; }
         body { margin: 0; font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:#f8fafc; color:#0f172a; }
@@ -36,6 +37,9 @@
         .btn.danger{color:#b91c1c;border-color:#fecaca;background:#fff5f5}
         .toast { position:fixed; right:24px; bottom:24px; background:#1a365d; color:#fff; padding:12px 16px; border-radius:8px; opacity:0; transform:translateY(8px); transition:.2s; }
         .toast.show { opacity:1; transform:translateY(0); }
+        .full-span { grid-column: 1 / -1; }
+        .inline-edit { display:flex; gap:6px; align-items:center; }
+        .inline-edit input { flex:1; min-width:140px; padding:6px 8px; border:1px solid #cbd5e1; border-radius:6px; }
         @media (max-width: 900px) { .grid { grid-template-columns:1fr; } }
     </style>
 </head>
@@ -54,13 +58,42 @@
         </div>
 
         <div class="grid">
+            <section class="card full-span">
+                <h3>팀 관리</h3>
+                <div class="grid" style="grid-template-columns:1fr 2fr; gap:12px;">
+                    <div>
+                        <div class="field"><label>팀 ID</label><input id="newTeamId" type="text" placeholder="예: MB3"></div>
+                        <div class="field"><label>팀명</label><input id="newTeamName" type="text" placeholder="예: MB3팀"></div>
+                        <div class="actions">
+                            <button class="btn primary" id="createTeamBtn">팀 생성</button>
+                        </div>
+                        <p class="muted">팀은 비활성화 또는 삭제할 수 있습니다. 삭제 시 해당 팀 계정이 일괄 삭제됩니다.</p>
+                    </div>
+                    <div style="overflow:auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>팀 ID</th>
+                                    <th>팀명</th>
+                                    <th>상태</th>
+                                    <th>관리</th>
+                                </tr>
+                            </thead>
+                            <tbody id="teamsTbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
             <section class="card">
                 <h3>일반 계정 생성</h3>
                 <div class="field"><label>로그인 ID</label><input id="loginId" type="text"></div>
                 <div class="field"><label>비밀번호</label><input id="password" type="password"></div>
                 <div class="field"><label>이름</label><input id="name" type="text"></div>
-                <div class="field"><label>팀 ID</label><input id="teamId" type="text" placeholder="예: MB2"></div>
-                <div class="field"><label>팀명</label><input id="teamName" type="text" placeholder="예: MB2팀"></div>
+                <div class="field">
+                    <label>팀 선택</label>
+                    <select id="teamSelect"></select>
+                </div>
                 <div class="field">
                     <label>권한</label>
                     <select id="role">
@@ -71,7 +104,7 @@
                 <div class="actions">
                     <button class="btn primary" id="createAccountBtn">계정 생성</button>
                 </div>
-                <p class="muted">관리자 탭에서는 일반 계정만 생성할 수 있습니다.</p>
+                <p class="muted" id="accountFormHint">관리자 탭에서는 일반 계정만 생성할 수 있습니다.</p>
             </section>
 
             <section class="card">
@@ -103,14 +136,91 @@
     <script src="auth.js"></script>
     <script>
         let currentUser = null;
+        let teamsCache = [];
 
         document.addEventListener('DOMContentLoaded', async () => {
             const auth = window.BTIAuth.bootstrap({ page: 'admin' });
             if (auth?.denied) return;
             currentUser = auth.user;
+            document.getElementById('createTeamBtn').addEventListener('click', onCreateTeam);
             document.getElementById('createAccountBtn').addEventListener('click', onCreateAccount);
+            await renderTeams();
+            await refreshTeamSelect();
             await renderAccounts();
         });
+
+        async function renderTeams() {
+            teamsCache = await window.BTIAuth.listTeams({ includeInactive: true });
+            const tbody = document.getElementById('teamsTbody');
+            tbody.innerHTML = teamsCache.map(t => {
+                const teamId = String(t.team_id || '');
+                const teamName = t.team_name || teamId;
+                const isSystem = Boolean(t.is_system) || teamId === 'HQ';
+                const isActive = t.active !== false;
+                return `
+                    <tr>
+                        <td>${teamId}</td>
+                        <td>
+                            ${isSystem
+                                ? teamName
+                                : `<div class="inline-edit">
+                                    <input type="text" value="${escapeHtml(teamName)}" data-team-name-input="${teamId}">
+                                    <button class="btn sm" data-save-team="${teamId}">저장</button>
+                                   </div>`}
+                        </td>
+                        <td>${isActive ? '활성' : '비활성'}</td>
+                        <td>
+                            ${isSystem
+                                ? '<span class="muted">시스템 팀</span>'
+                                : (isActive
+                                    ? `<div class="row-actions">
+                                        <button class="btn sm" data-deactivate-team="${teamId}">비활성화</button>
+                                        <button class="btn sm danger" data-delete-team="${teamId}">삭제</button>
+                                      </div>`
+                                    : '<span class="muted">비활성</span>')}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            document.querySelectorAll('[data-save-team]').forEach(btn => {
+                btn.addEventListener('click', () => onUpdateTeam(btn.dataset.saveTeam));
+            });
+            document.querySelectorAll('[data-deactivate-team]').forEach(btn => {
+                btn.addEventListener('click', () => onDeactivateTeam(btn.dataset.deactivateTeam));
+            });
+            document.querySelectorAll('[data-delete-team]').forEach(btn => {
+                btn.addEventListener('click', () => onDeleteTeam(btn.dataset.deleteTeam));
+            });
+        }
+
+        async function refreshTeamSelect() {
+            if (!teamsCache.length) {
+                teamsCache = await window.BTIAuth.listTeams({ includeInactive: true });
+            }
+            const select = document.getElementById('teamSelect');
+            const eligible = teamsCache.filter(t => t.active !== false && String(t.team_id || '').toUpperCase() !== 'HQ');
+            select.innerHTML = '';
+            if (eligible.length === 0) {
+                const opt = document.createElement('option');
+                opt.value = '';
+                opt.textContent = '생성 가능한 활성 팀이 없습니다';
+                select.appendChild(opt);
+                select.disabled = true;
+                document.getElementById('createAccountBtn').disabled = true;
+                document.getElementById('accountFormHint').textContent = '먼저 팀 관리에서 팀을 생성하세요.';
+                return;
+            }
+            select.disabled = false;
+            document.getElementById('createAccountBtn').disabled = false;
+            document.getElementById('accountFormHint').textContent = '관리자 탭에서는 일반 계정만 생성할 수 있습니다.';
+            eligible.forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t.team_id;
+                opt.textContent = `${t.team_name || t.team_id} (${t.team_id})`;
+                select.appendChild(opt);
+            });
+        }
 
         async function renderAccounts() {
             const rows = await window.BTIAuth.listAccounts();
@@ -143,20 +253,81 @@
 
         async function onCreateAccount() {
             try {
+                const selectedTeam = teamsCache.find(t => String(t.team_id) === String(document.getElementById('teamSelect').value));
+                if (!selectedTeam) throw new Error('선택 가능한 팀이 없습니다. 팀을 먼저 생성해주세요.');
                 await window.BTIAuth.createAccount({
                     login_id: document.getElementById('loginId').value,
                     password: document.getElementById('password').value,
                     name: document.getElementById('name').value,
-                    team_id: document.getElementById('teamId').value,
-                    team_name: document.getElementById('teamName').value,
+                    team_id: selectedTeam.team_id,
+                    team_name: selectedTeam.team_name,
                     role: document.getElementById('role').value,
                     active: true
                 });
-                ['loginId','password','name','teamId','teamName'].forEach(id => document.getElementById(id).value = '');
+                ['loginId','password','name'].forEach(id => document.getElementById(id).value = '');
                 await renderAccounts();
                 showToast('계정이 생성되었습니다.');
             } catch (err) {
                 showToast(err.message || '계정 생성에 실패했습니다.');
+            }
+        }
+
+        async function onCreateTeam() {
+            try {
+                await window.BTIAuth.createTeam({
+                    team_id: document.getElementById('newTeamId').value,
+                    team_name: document.getElementById('newTeamName').value
+                });
+                ['newTeamId', 'newTeamName'].forEach(id => document.getElementById(id).value = '');
+                await renderTeams();
+                await refreshTeamSelect();
+                showToast('팀이 생성되었습니다.');
+            } catch (err) {
+                showToast(err.message || '팀 생성에 실패했습니다.');
+            }
+        }
+
+        async function onUpdateTeam(teamId) {
+            try {
+                const input = document.querySelector(`[data-team-name-input="${CSS.escape(teamId)}"]`);
+                if (!input) throw new Error('팀 입력 필드를 찾을 수 없습니다.');
+                await window.BTIAuth.updateTeam(teamId, { team_name: input.value });
+                await renderTeams();
+                await refreshTeamSelect();
+                showToast('팀명이 수정되었습니다.');
+            } catch (err) {
+                showToast(err.message || '팀 수정에 실패했습니다.');
+            }
+        }
+
+        async function onDeactivateTeam(teamId) {
+            try {
+                const target = teamsCache.find(t => String(t.team_id) === String(teamId));
+                const ok = confirm(`${target?.team_name || teamId} (${teamId}) 팀을 비활성화하시겠습니까?`);
+                if (!ok) return;
+                await window.BTIAuth.deactivateTeam(teamId);
+                await renderTeams();
+                await refreshTeamSelect();
+                showToast('팀이 비활성화되었습니다.');
+            } catch (err) {
+                showToast(err.message || '팀 비활성화에 실패했습니다.');
+            }
+        }
+
+        async function onDeleteTeam(teamId) {
+            try {
+                const target = teamsCache.find(t => String(t.team_id) === String(teamId));
+                const targetAccounts = (await window.BTIAuth.listAccounts()).filter(a => String(a.team_id) === String(teamId));
+                const ok = confirm(`${target?.team_name || teamId} (${teamId}) 팀을 삭제하시겠습니까?\n해당 팀 계정 ${targetAccounts.length}개가 함께 삭제됩니다.`);
+                if (!ok) return;
+                const result = await window.BTIAuth.deleteTeam(teamId);
+                await renderTeams();
+                await refreshTeamSelect();
+                await renderAccounts();
+                const count = Number(result?.deletedAccountCount ?? targetAccounts.length ?? 0);
+                showToast(`팀이 삭제되었습니다. (계정 ${count}개 삭제)`);
+            } catch (err) {
+                showToast(err.message || '팀 삭제에 실패했습니다.');
             }
         }
 
@@ -192,6 +363,15 @@
             el.textContent = message;
             el.classList.add('show');
             setTimeout(() => el.classList.remove('show'), 2200);
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
         }
     </script>
 </body>

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BTI 소재 매출 리포트</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <script src="https://unpkg.com/exceljs@4.4.0/dist/exceljs.min.js"></script>
     <style>
         * {
@@ -571,7 +572,7 @@
     <header class="header">
         <h1>BTI 소재 매출 리포트</h1>
         <div class="user-info">
-            <span class="team-badge">MB2팀</span>
+            <span class="team-badge">팀</span>
             <span>홍길동</span>
         </div>
     </header>
@@ -826,6 +827,13 @@
                 net_sales: Number(row.net_sales ?? row.net_revenue ?? 0),
                 net_revenue: Number(row.net_revenue ?? 0),
             };
+        }
+
+        function getReportFilenameTeamPrefix() {
+            if (!currentUser) return '리포트';
+            if (currentUser.role === 'ADMIN') return '전체팀';
+            const base = String(currentUser.team_id || currentUser.team_name || 'TEAM').trim() || 'TEAM';
+            return base.replace(/[^A-Za-z0-9가-힣_-]/g, '_');
         }
 
         async function loadReportRows(startDate, endDate) {
@@ -1522,7 +1530,7 @@
             // 파일 생성 및 다운로드
             const startDate = startDateInput.value.replace(/-/g, '');
             const endDate = endDateInput.value.replace(/-/g, '');
-            const filename = `MB2_매출리포트_${startDate}_${endDate}.xlsx`;
+            const filename = `${getReportFilenameTeamPrefix()}_매출리포트_${startDate}_${endDate}.xlsx`;
 
             const buffer = await wb.xlsx.writeBuffer();
             const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });

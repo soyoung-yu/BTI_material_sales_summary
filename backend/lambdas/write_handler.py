@@ -15,11 +15,14 @@ s3 = boto3.client('s3')
 DATA_BUCKET = os.environ.get('BTI_DATA_BUCKET', '')
 MATERIALS_KEY = os.environ.get('BTI_MATERIALS_LATEST_KEY', 'materials/latest.json')
 ACCOUNTS_KEY = os.environ.get('BTI_ACCOUNTS_KEY', 'auth/accounts.json')
+TEAMS_KEY = os.environ.get('BTI_TEAMS_KEY', 'auth/teams.json')
 MATERIAL_REQUESTS_KEY = os.environ.get('BTI_MATERIAL_REQUESTS_KEY', 'materials/requests_store.json')
 ALLOWED_ORIGIN = os.environ.get('ALLOWED_ORIGIN', '*')
 AUTH_SECRET = os.environ.get('BTI_AUTH_SECRET', 'dev-change-this-secret')
 DEFAULT_RESET_PASSWORD = os.environ.get('BTI_DEFAULT_RESET_PASSWORD', 'firstpassword')
 TOKEN_EXPIRES_HOURS = int(os.environ.get('BTI_AUTH_TOKEN_EXPIRES_HOURS', '12'))
+LEGACY_DEFAULT_TEAM_ID = os.environ.get('BTI_LEGACY_DEFAULT_TEAM_ID', 'MB2')
+LEGACY_DEFAULT_TEAM_NAME = os.environ.get('BTI_LEGACY_DEFAULT_TEAM_NAME', 'MB2팀')
 
 ROLES = {'ADMIN', 'TEAM_ADMIN', 'TEAM_MEMBER'}
 
@@ -46,6 +49,21 @@ DEFAULT_ACCOUNTS = [
     },
 ]
 
+DEFAULT_TEAMS = [
+    {
+        'team_id': 'HQ',
+        'team_name': '관리자',
+        'active': True,
+        'is_system': True,
+    },
+    {
+        'team_id': LEGACY_DEFAULT_TEAM_ID,
+        'team_name': LEGACY_DEFAULT_TEAM_NAME,
+        'active': True,
+        'is_system': False,
+    },
+]
+
 
 def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
@@ -57,7 +75,7 @@ def _response(status: int, body: Dict[str, Any]) -> Dict[str, Any]:
         'headers': {
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
-            'Access-Control-Allow-Methods': 'GET,POST,DELETE,OPTIONS',
+            'Access-Control-Allow-Methods': 'GET,POST,PATCH,DELETE,OPTIONS',
             'Access-Control-Allow-Headers': 'Content-Type,Authorization'
         },
         'body': json.dumps(body, ensure_ascii=False, default=str)
@@ -150,6 +168,109 @@ def _save_accounts(rows: List[Dict[str, Any]]) -> None:
             'rowCount': len(rows)
         }
     })
+
+
+def _normalize_team_id(value: Any) -> str:
+    return str(value or '').strip().upper()
+
+
+def _normalize_teams_rows(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    normalized: List[Dict[str, Any]] = []
+    seen: set[str] = set()
+    now = _utcnow().isoformat()
+
+    for row in rows or []:
+        if not isinstance(row, dict):
+            continue
+        team_id = _normalize_team_id(row.get('team_id'))
+        if not team_id or team_id in seen:
+            continue
+        team_name = str(row.get('team_name') or (f'{team_id}팀' if team_id != 'HQ' else '관리자')).strip()
+        item = dict(row)
+        item['team_id'] = team_id
+        item['team_name'] = team_name or team_id
+        item['active'] = False if item.get('active') is False else True
+        item['is_system'] = bool(item.get('is_system', team_id == 'HQ'))
+        item.setdefault('created_at', now)
+        item.setdefault('updated_at', item.get('created_at') or now)
+        item.setdefault('created_by_account_id', 'system')
+        item.setdefault('created_by_name', 'system')
+        normalized.append(item)
+        seen.add(team_id)
+
+    for default_team in DEFAULT_TEAMS:
+        team_id = _normalize_team_id(default_team.get('team_id'))
+        if team_id in seen:
+            continue
+        normalized.append({
+            **default_team,
+            'team_id': team_id,
+            'team_name': str(default_team.get('team_name') or team_id).strip() or team_id,
+            'created_at': now,
+            'updated_at': now,
+            'created_by_account_id': 'system',
+            'created_by_name': 'system',
+        })
+        seen.add(team_id)
+
+    normalized.sort(key=lambda r: (0 if r.get('is_system') else 1, str(r.get('team_id'))))
+    return normalized
+
+
+def _save_teams(rows: List[Dict[str, Any]]) -> None:
+    rows = _normalize_teams_rows(rows)
+    _put_json(TEAMS_KEY, {
+        'rows': rows,
+        'meta': {
+            'updatedAt': _utcnow().isoformat(),
+            'rowCount': len(rows)
+        }
+    })
+
+
+def _seed_teams_from_accounts() -> List[Dict[str, Any]]:
+    accounts = _load_accounts()
+    rows: List[Dict[str, Any]] = []
+    now = _utcnow().isoformat()
+    for a in accounts:
+        team_id = _normalize_team_id(a.get('team_id'))
+        if not team_id:
+            continue
+        rows.append({
+            'team_id': team_id,
+            'team_name': str(a.get('team_name') or (f'{team_id}팀' if team_id != 'HQ' else '관리자')).strip() or team_id,
+            'active': True,
+            'is_system': team_id == 'HQ',
+            'created_at': now,
+            'updated_at': now,
+            'created_by_account_id': 'system',
+            'created_by_name': 'system',
+        })
+    rows = _normalize_teams_rows(rows)
+    _save_teams(rows)
+    return rows
+
+
+def _load_teams() -> List[Dict[str, Any]]:
+    payload = _load_json_or_default(TEAMS_KEY, {'rows': None})
+    rows = payload.get('rows') if isinstance(payload, dict) else payload
+    if not isinstance(rows, list):
+        return _seed_teams_from_accounts()
+    normalized = _normalize_teams_rows(rows)
+    if normalized != rows:
+        _save_teams(normalized)
+    return normalized
+
+
+def _public_team(team: Dict[str, Any]) -> Dict[str, Any]:
+    return {
+        'team_id': team.get('team_id'),
+        'team_name': team.get('team_name'),
+        'active': team.get('active', True),
+        'is_system': bool(team.get('is_system', False)),
+        'created_at': team.get('created_at'),
+        'updated_at': team.get('updated_at'),
+    }
 
 
 def _public_account(a: Dict[str, Any]) -> Dict[str, Any]:
@@ -250,17 +371,33 @@ def _load_materials_payload() -> Dict[str, Any]:
         return {'rows': [], 'meta': {}}
     payload.setdefault('rows', [])
     payload.setdefault('meta', {})
+    payload['rows'] = _normalize_materials_rows(payload.get('rows') or [])
     return payload
 
 
 def _save_materials_payload(payload: Dict[str, Any]) -> None:
     payload = dict(payload)
+    payload['rows'] = _normalize_materials_rows(payload.get('rows') or [])
     payload['meta'] = {
         **(payload.get('meta') or {}),
         'updatedAt': _utcnow().isoformat(),
         'rowCount': len(payload.get('rows') or [])
     }
     _put_json(MATERIALS_KEY, payload)
+
+
+def _normalize_materials_rows(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    normalized: List[Dict[str, Any]] = []
+    for row in rows or []:
+        if not isinstance(row, dict):
+            continue
+        item = dict(row)
+        team_id = str(item.get('team_id') or LEGACY_DEFAULT_TEAM_ID).strip() or LEGACY_DEFAULT_TEAM_ID
+        default_team_name = LEGACY_DEFAULT_TEAM_NAME if team_id == LEGACY_DEFAULT_TEAM_ID else f'{team_id}팀'
+        item['team_id'] = team_id
+        item['team_name'] = str(item.get('team_name') or default_team_name).strip() or default_team_name
+        normalized.append(item)
+    return normalized
 
 
 def _normalize_request_type(value: str) -> str:
@@ -325,13 +462,22 @@ def _handle_admin_create_account(event: Dict[str, Any]) -> Dict[str, Any]:
     login_id = str(body.get('login_id') or body.get('loginId') or '').strip()
     password = str(body.get('password') or '')
     name = str(body.get('name') or '').strip()
-    team_id = str(body.get('team_id') or body.get('teamId') or '').strip()
-    team_name = str(body.get('team_name') or body.get('teamName') or team_id).strip()
+    team_id = _normalize_team_id(body.get('team_id') or body.get('teamId'))
     role = str(body.get('role') or '').strip().upper()
     if role not in {'TEAM_ADMIN', 'TEAM_MEMBER'}:
         return _response(400, {'message': 'role은 TEAM_ADMIN 또는 TEAM_MEMBER만 가능합니다.'})
     if not all([login_id, password, name, team_id]):
         return _response(400, {'message': 'login_id, password, name, team_id는 필수입니다.'})
+
+    teams = _load_teams()
+    selected_team = next((t for t in teams if str(t.get('team_id')) == team_id), None)
+    if not selected_team:
+        return _response(400, {'message': '존재하지 않는 팀입니다.'})
+    if selected_team.get('active') is False:
+        return _response(400, {'message': '비활성 팀에는 계정을 생성할 수 없습니다.'})
+    if str(selected_team.get('team_id')) == 'HQ':
+        return _response(400, {'message': '관리자(HQ) 팀으로 일반 계정을 생성할 수 없습니다.'})
+    team_name = str(selected_team.get('team_name') or team_id).strip() or team_id
 
     accounts = _load_accounts()
     if any(a.get('login_id') == login_id for a in accounts):
@@ -358,6 +504,126 @@ def _handle_admin_list_accounts(event: Dict[str, Any]) -> Dict[str, Any]:
     _require_roles(user, {'ADMIN'})
     accounts = _load_accounts()
     return _response(200, {'rows': [_public_account(a) for a in accounts], 'meta': {'rowCount': len(accounts)}})
+
+
+def _handle_admin_list_teams(event: Dict[str, Any]) -> Dict[str, Any]:
+    user = _require_auth(event)
+    _require_roles(user, {'ADMIN'})
+    rows = _load_teams()
+    return _response(200, {'rows': [_public_team(t) for t in rows], 'meta': {'rowCount': len(rows)}})
+
+
+def _handle_admin_create_team(event: Dict[str, Any]) -> Dict[str, Any]:
+    user = _require_auth(event)
+    _require_roles(user, {'ADMIN'})
+    body = _parse_json_body(event)
+    team_id = _normalize_team_id(body.get('team_id') or body.get('teamId'))
+    team_name = str(body.get('team_name') or body.get('teamName') or '').strip()
+    if not team_id or not team_name:
+        return _response(400, {'message': 'team_id와 team_name은 필수입니다.'})
+
+    rows = _load_teams()
+    if any(str(t.get('team_id')) == team_id for t in rows):
+        return _response(409, {'message': '이미 존재하는 팀 ID입니다.'})
+
+    now = _utcnow().isoformat()
+    new_team = {
+        'team_id': team_id,
+        'team_name': team_name,
+        'active': True,
+        'is_system': False,
+        'created_at': now,
+        'updated_at': now,
+        'created_by_account_id': user.get('account_id'),
+        'created_by_name': user.get('name'),
+    }
+    rows.append(new_team)
+    _save_teams(rows)
+    return _response(201, {'team': _public_team(new_team)})
+
+
+def _handle_admin_update_team(event: Dict[str, Any]) -> Dict[str, Any]:
+    user = _require_auth(event)
+    _require_roles(user, {'ADMIN'})
+    path_params = event.get('pathParameters') or {}
+    team_id = _normalize_team_id(path_params.get('teamId'))
+    if not team_id:
+        return _response(400, {'message': 'teamId path parameter가 필요합니다.'})
+
+    body = _parse_json_body(event)
+    team_name = str(body.get('team_name') or body.get('teamName') or '').strip()
+    if not team_name:
+        return _response(400, {'message': 'team_name은 필수입니다.'})
+
+    rows = _load_teams()
+    idx = next((i for i, t in enumerate(rows) if str(t.get('team_id')) == team_id), -1)
+    if idx < 0:
+        return _response(404, {'message': '팀을 찾을 수 없습니다.'})
+    if rows[idx].get('is_system') or team_id == 'HQ':
+        return _response(400, {'message': '시스템 팀은 수정할 수 없습니다.'})
+
+    rows[idx] = {**rows[idx], 'team_name': team_name, 'updated_at': _utcnow().isoformat()}
+    _save_teams(rows)
+    return _response(200, {'team': _public_team(rows[idx])})
+
+
+def _handle_admin_deactivate_team(event: Dict[str, Any]) -> Dict[str, Any]:
+    user = _require_auth(event)
+    _require_roles(user, {'ADMIN'})
+    path_params = event.get('pathParameters') or {}
+    team_id = _normalize_team_id(path_params.get('teamId'))
+    if not team_id:
+        return _response(400, {'message': 'teamId path parameter가 필요합니다.'})
+    if team_id == 'HQ':
+        return _response(400, {'message': '시스템 팀은 비활성화할 수 없습니다.'})
+
+    rows = _load_teams()
+    idx = next((i for i, t in enumerate(rows) if str(t.get('team_id')) == team_id), -1)
+    if idx < 0:
+        return _response(404, {'message': '팀을 찾을 수 없습니다.'})
+    if rows[idx].get('active') is False:
+        return _response(200, {'team': _public_team(rows[idx])})
+
+    accounts = _load_accounts()
+    active_accounts = [a for a in accounts if str(a.get('team_id')) == team_id and a.get('active', True)]
+    if active_accounts:
+        return _response(400, {'message': '활성 계정이 존재하는 팀은 비활성화할 수 없습니다.'})
+
+    rows[idx] = {**rows[idx], 'active': False, 'updated_at': _utcnow().isoformat()}
+    _save_teams(rows)
+    return _response(200, {'team': _public_team(rows[idx])})
+
+
+def _handle_admin_delete_team(event: Dict[str, Any]) -> Dict[str, Any]:
+    user = _require_auth(event)
+    _require_roles(user, {'ADMIN'})
+    path_params = event.get('pathParameters') or {}
+    team_id = _normalize_team_id(path_params.get('teamId'))
+    if not team_id:
+        return _response(400, {'message': 'teamId path parameter가 필요합니다.'})
+    if team_id == 'HQ':
+        return _response(400, {'message': '시스템 팀은 삭제할 수 없습니다.'})
+
+    rows = _load_teams()
+    idx = next((i for i, t in enumerate(rows) if str(t.get('team_id')) == team_id), -1)
+    if idx < 0:
+        return _response(404, {'message': '팀을 찾을 수 없습니다.'})
+    if rows[idx].get('is_system'):
+        return _response(400, {'message': '시스템 팀은 삭제할 수 없습니다.'})
+
+    accounts = _load_accounts()
+    remaining_accounts = [a for a in accounts if str(a.get('team_id')) != team_id]
+    deleted_accounts = [a for a in accounts if str(a.get('team_id')) == team_id]
+    if deleted_accounts:
+        _save_accounts(remaining_accounts)
+
+    deleted_team = rows.pop(idx)
+    _save_teams(rows)
+    return _response(200, {
+        'deletedTeam': _public_team(deleted_team),
+        'deletedAccounts': [_public_account(a) for a in deleted_accounts],
+        'deletedAccountCount': len(deleted_accounts),
+    })
 
 
 def _handle_admin_delete_account(event: Dict[str, Any]) -> Dict[str, Any]:
@@ -416,6 +682,12 @@ def _handle_material_requests_create(event: Dict[str, Any]) -> Dict[str, Any]:
     body = _parse_json_body(event)
     normalized = _normalize_material_request_payload(body)
 
+    payload = {
+        **(normalized.get('payload') or {}),
+        'team_id': user.get('team_id'),
+        'team_name': user.get('team_name'),
+    }
+
     req = {
         'request_id': f'req-{uuid4().hex[:12]}',
         'request_type': normalized['request_type'],
@@ -423,7 +695,7 @@ def _handle_material_requests_create(event: Dict[str, Any]) -> Dict[str, Any]:
         'team_id': user.get('team_id'),
         'requested_by_account_id': user.get('account_id'),
         'requested_by_name': user.get('name'),
-        'payload': normalized['payload'],
+        'payload': payload,
         'approved_by_account_id': None,
         'approved_by_name': None,
         'approved_at': None,
@@ -448,6 +720,8 @@ def _apply_request_to_materials(materials_rows: List[Dict[str, Any]], request_ro
     payload = request_row.get('payload') or {}
     req_type = request_row.get('request_type')
     raw_cd = str(payload.get('raw_cd') or '').strip()
+    request_team_id = str(request_row.get('team_id') or payload.get('team_id') or LEGACY_DEFAULT_TEAM_ID).strip() or LEGACY_DEFAULT_TEAM_ID
+    request_team_name = str(payload.get('team_name') or LEGACY_DEFAULT_TEAM_NAME).strip() or LEGACY_DEFAULT_TEAM_NAME
     rows = [dict(r) for r in materials_rows]
 
     if req_type == 'CREATE':
@@ -458,6 +732,8 @@ def _apply_request_to_materials(materials_rows: List[Dict[str, Any]], request_ro
             'researcher': payload.get('researcher', request_row.get('requested_by_name', '')),
             'created': payload.get('created') or _utcnow().date().isoformat(),
             'approval_status': '완료',
+            'team_id': request_team_id,
+            'team_name': request_team_name,
         }
         rows = [r for r in rows if str(r.get('raw_cd', '')).strip() != raw_cd]
         rows.insert(0, new_row)
@@ -474,6 +750,8 @@ def _apply_request_to_materials(materials_rows: List[Dict[str, Any]], request_ro
             'researcher': payload.get('researcher', request_row.get('requested_by_name', '')),
             'created': payload.get('created') or _utcnow().date().isoformat(),
             'approval_status': '완료',
+            'team_id': request_team_id,
+            'team_name': request_team_name,
         })
         return rows
 
@@ -485,7 +763,9 @@ def _apply_request_to_materials(materials_rows: List[Dict[str, Any]], request_ro
         rows[idx] = {
             **rows[idx],
             **{k: v for k, v in payload.items() if v is not None},
-            'approval_status': '완료'
+            'approval_status': '완료',
+            'team_id': request_team_id,
+            'team_name': request_team_name
         }
         return rows
 
@@ -539,6 +819,21 @@ def lambda_handler(event: Dict[str, Any], _context: Any) -> Dict[str, Any]:
 
         if (path.endswith('/auth/change-password') or path == '/auth/change-password') and method == 'POST':
             return _handle_change_password(event)
+
+        if (path.endswith('/admin/teams') or path == '/admin/teams') and method == 'GET':
+            return _handle_admin_list_teams(event)
+
+        if (path.endswith('/admin/teams') or path == '/admin/teams') and method == 'POST':
+            return _handle_admin_create_team(event)
+
+        if '/admin/teams/' in path and path.endswith('/deactivate') and method == 'POST':
+            return _handle_admin_deactivate_team(event)
+
+        if '/admin/teams/' in path and method == 'DELETE':
+            return _handle_admin_delete_team(event)
+
+        if '/admin/teams/' in path and method == 'PATCH':
+            return _handle_admin_update_team(event)
 
         if (path.endswith('/admin/accounts') or path == '/admin/accounts') and method == 'GET':
             return _handle_admin_list_accounts(event)

@@ -16,6 +16,8 @@ MATERIALS_KEY = os.environ.get('BTI_MATERIALS_LATEST_KEY', 'materials/latest.jso
 META_KEY = os.environ.get('BTI_META_LATEST_KEY', 'meta/latest.json')
 ALLOWED_ORIGIN = os.environ.get('ALLOWED_ORIGIN', '*')
 AUTH_SECRET = os.environ.get('BTI_AUTH_SECRET', 'dev-change-this-secret')
+LEGACY_DEFAULT_TEAM_ID = os.environ.get('BTI_LEGACY_DEFAULT_TEAM_ID', 'MB2')
+LEGACY_DEFAULT_TEAM_NAME = os.environ.get('BTI_LEGACY_DEFAULT_TEAM_NAME', 'MB2팀')
 
 
 def _response(status: int, body: Dict[str, Any]) -> Dict[str, Any]:
@@ -44,6 +46,54 @@ def _as_rows(payload: Any) -> List[Dict[str, Any]]:
     if isinstance(payload, list):
         return payload
     return []
+
+
+def _normalize_materials_rows(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    normalized: List[Dict[str, Any]] = []
+    for row in rows or []:
+        if not isinstance(row, dict):
+            continue
+        item = dict(row)
+        team_id = str(item.get('team_id') or LEGACY_DEFAULT_TEAM_ID).strip() or LEGACY_DEFAULT_TEAM_ID
+        default_team_name = LEGACY_DEFAULT_TEAM_NAME if team_id == LEGACY_DEFAULT_TEAM_ID else f'{team_id}팀'
+        item['team_id'] = team_id
+        item['team_name'] = str(item.get('team_name') or default_team_name).strip() or default_team_name
+        normalized.append(item)
+    return normalized
+
+
+def _filter_rows_by_team(rows: List[Dict[str, Any]], claims: Dict[str, Any]) -> List[Dict[str, Any]]:
+    if str(claims.get('role') or '') == 'ADMIN':
+        return rows
+    team_id = str(claims.get('team_id') or '').strip()
+    if not team_id:
+        return []
+    return [r for r in rows if str(r.get('team_id') or LEGACY_DEFAULT_TEAM_ID).strip() == team_id]
+
+
+def _build_raw_team_map(material_rows: List[Dict[str, Any]]) -> Dict[str, str]:
+    team_map: Dict[str, str] = {}
+    for row in _normalize_materials_rows(material_rows):
+        raw_cd = str(row.get('raw_cd') or '').strip()
+        if not raw_cd:
+            continue
+        team_map[raw_cd] = str(row.get('team_id') or LEGACY_DEFAULT_TEAM_ID).strip() or LEGACY_DEFAULT_TEAM_ID
+    return team_map
+
+
+def _filter_report_rows_by_team(rows: List[Dict[str, Any]], claims: Dict[str, Any], raw_team_map: Dict[str, str]) -> List[Dict[str, Any]]:
+    if str(claims.get('role') or '') == 'ADMIN':
+        return rows
+    team_id = str(claims.get('team_id') or '').strip()
+    if not team_id:
+        return []
+    result: List[Dict[str, Any]] = []
+    for row in rows:
+        raw_cd = str((row or {}).get('raw_cd') or '').strip()
+        mapped_team = raw_team_map.get(raw_cd, LEGACY_DEFAULT_TEAM_ID)
+        if mapped_team == team_id:
+            result.append(row)
+    return result
 
 
 def _normalize_date(value: str) -> str:
@@ -127,29 +177,38 @@ def lambda_handler(event: Dict[str, Any], _context: Any) -> Dict[str, Any]:
         return _response(200, {'ok': True})
 
     try:
-        _require_auth(event)
+        claims = _require_auth(event)
         path = _route(event)
         query = event.get('queryStringParameters') or {}
 
         if path.endswith('/report-data') or path == '/report-data':
             payload = _load_json(REPORT_KEY)
             rows = _as_rows(payload)
-            filtered_rows = _filter_by_date(rows, query.get('startDate', ''), query.get('endDate', ''))
+            date_filtered_rows = _filter_by_date(rows, query.get('startDate', ''), query.get('endDate', ''))
+            materials_payload = _load_json(MATERIALS_KEY)
+            material_rows = _as_rows(materials_payload)
+            raw_team_map = _build_raw_team_map(material_rows)
+            filtered_rows = _filter_report_rows_by_team(date_filtered_rows, claims, raw_team_map)
             meta = payload.get('meta', {}) if isinstance(payload, dict) else {}
             meta = {
                 **meta,
                 'rowCount': len(filtered_rows),
+                'scopeTeamId': 'ALL' if str(claims.get('role') or '') == 'ADMIN' else str(claims.get('team_id') or ''),
+                'scopeTeamName': '전체팀' if str(claims.get('role') or '') == 'ADMIN' else str(claims.get('team_name') or ''),
                 'servedAt': datetime.utcnow().isoformat(timespec='seconds') + 'Z'
             }
             return _response(200, {'rows': filtered_rows, 'meta': meta})
 
         if path.endswith('/materials') or path == '/materials':
             payload = _load_json(MATERIALS_KEY)
-            rows = _as_rows(payload)
+            rows = _normalize_materials_rows(_as_rows(payload))
+            rows = _filter_rows_by_team(rows, claims)
             meta = payload.get('meta', {}) if isinstance(payload, dict) else {}
             meta = {
                 **meta,
                 'rowCount': len(rows),
+                'scopeTeamId': 'ALL' if str(claims.get('role') or '') == 'ADMIN' else str(claims.get('team_id') or ''),
+                'scopeTeamName': '전체팀' if str(claims.get('role') or '') == 'ADMIN' else str(claims.get('team_name') or ''),
                 'servedAt': datetime.utcnow().isoformat(timespec='seconds') + 'Z'
             }
             return _response(200, {'rows': rows, 'meta': meta})

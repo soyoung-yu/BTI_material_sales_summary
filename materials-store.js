@@ -23,6 +23,12 @@
         return new Date().toISOString().slice(0, 10);
     }
 
+    function normalizeTeamFields(row) {
+        const teamId = String(row?.team_id || row?.requested_by_team_id || 'MB2').trim() || 'MB2';
+        const teamName = String(row?.team_name || (teamId === 'MB2' ? 'MB2팀' : `${teamId}팀`)).trim() || `${teamId}팀`;
+        return { team_id: teamId, team_name: teamName };
+    }
+
     function ensureId(row) {
         return row._id ? row : { ...row, _id: `mat-${Date.now()}-${Math.random().toString(36).slice(2, 8)}` };
     }
@@ -42,6 +48,7 @@
             requested_at: row.requested_at ?? '',
             approved_by: row.approved_by ?? '',
             approved_at: row.approved_at ?? '',
+            ...normalizeTeamFields(row),
             ...row
         }));
         write(rows);
@@ -73,7 +80,9 @@
                     mmsta: payload.mmsta ?? '',
                     researcher: payload.researcher || user?.name || '',
                     created: payload.created || todayYmd(),
-                    approval_status: payload.approval_status || ''
+                    approval_status: payload.approval_status || '',
+                    team_id: user?.team_id || payload.team_id || 'MB2',
+                    team_name: user?.team_name || payload.team_name || `${user?.team_id || payload.team_id || 'MB2'}팀`
                 }
             });
         }
@@ -89,6 +98,7 @@
             request_status: 'PENDING',
             requested_by: user?.name || '',
             requested_by_team_id: user?.team_id || '',
+            ...normalizeTeamFields(user || {}),
             requested_at: nowIso(),
             approved_by: '',
             approved_at: ''
@@ -106,7 +116,9 @@
                     raw_nm: patch.raw_nm,
                     mmsta: patch.mmsta ?? '',
                     researcher: patch.researcher || user?.name || '',
-                    created: patch.created || todayYmd()
+                    created: patch.created || todayYmd(),
+                    team_id: user?.team_id || patch.team_id || 'MB2',
+                    team_name: user?.team_name || patch.team_name || `${user?.team_id || patch.team_id || 'MB2'}팀`
                 }
             });
         }
@@ -121,6 +133,7 @@
             request_status: 'PENDING',
             requested_by: user?.name || '',
             requested_by_team_id: user?.team_id || '',
+            ...normalizeTeamFields(user || {}),
             requested_at: nowIso()
         };
         write(rows);
@@ -133,7 +146,9 @@
                 request_type: 'DELETE',
                 payload: {
                     raw_cd: rowData?.raw_cd || '',
-                    raw_nm: rowData?.raw_nm || ''
+                    raw_nm: rowData?.raw_nm || '',
+                    team_id: user?.team_id || rowData?.team_id || 'MB2',
+                    team_name: user?.team_name || rowData?.team_name || `${user?.team_id || rowData?.team_id || 'MB2'}팀`
                 }
             });
         }
@@ -153,6 +168,7 @@
             request_status: 'PENDING',
             requested_by: user?.name || '',
             requested_by_team_id: user?.team_id || '',
+            ...normalizeTeamFields(row),
             requested_at: nowIso()
         };
         write(rows);

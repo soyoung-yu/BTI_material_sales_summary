@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>소재 관리 - BTI 소재 매출 리포트</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <style>
         * {
             margin: 0;
@@ -513,7 +514,7 @@
     <header class="header">
         <h1>BTI 소재 매출 리포트</h1>
         <div class="user-info">
-            <span class="team-badge">MB2팀</span>
+            <span class="team-badge">팀</span>
             <span>홍길동</span>
         </div>
     </header>
@@ -555,7 +556,7 @@
         <div class="card">
             <div class="card-header">
                 <div>
-                    <span class="card-title">MB2팀 개발 소재</span>
+                    <span class="card-title" id="materialsCardTitle">개발 소재</span>
                     <span class="material-count" id="materialCount">총 0개</span>
                 </div>
                 <div class="toolbar">
@@ -726,6 +727,7 @@
         const searchInput = document.getElementById('searchInput');
         const materialTableBody = document.getElementById('materialTableBody');
         const materialCount = document.getElementById('materialCount');
+        const materialsCardTitle = document.getElementById('materialsCardTitle');
         const paginationInfo = document.getElementById('paginationInfo');
         const paginationControls = document.getElementById('paginationControls');
 
@@ -734,9 +736,22 @@
             const auth = window.BTIAuth?.bootstrap({ page: 'materials' });
             if (auth?.denied) return;
             currentUser = auth?.user || null;
+            updateTeamScopedLabels();
             await initializeMaterials();
             setupEventListeners();
         });
+
+        function getDisplayTeamLabel() {
+            if (!currentUser) return '팀';
+            if (currentUser.role === 'ADMIN') return '전체팀';
+            return currentUser.team_name || currentUser.team_id || '팀';
+        }
+
+        function updateTeamScopedLabels() {
+            if (!materialsCardTitle) return;
+            const teamLabel = getDisplayTeamLabel();
+            materialsCardTitle.textContent = `${teamLabel} 개발 소재`;
+        }
 
         async function initializeMaterials() {
             let seedRows = [];
@@ -1058,7 +1073,9 @@
                     raw_nm: rawNm,
                     researcher_id: researcherId,
                     researcher: researcherName,
-                    status: statusValue
+                    status: statusValue,
+                    team_id: currentUser?.team_id || 'MB2',
+                    team_name: currentUser?.team_name || `${currentUser?.team_id || 'MB2'}팀`
                 });
             }
 

@@ -3,6 +3,7 @@
     const SESSION_KEY = 'BTI_SESSION';
     const AUTH_TOKEN_KEY = 'BTI_AUTH_TOKEN';
     const AUTH_USER_KEY = 'BTI_AUTH_USER';
+    const TEAMS_KEY = 'BTI_TEAMS';
     const DEFAULT_RESET_PASSWORD = 'firstpassword';
 
     const ROLES = {
@@ -62,6 +63,42 @@
         if (Array.isArray(existing) && existing.length > 0) return existing;
         writeJson(ACCOUNTS_KEY, DEFAULT_ACCOUNTS);
         return DEFAULT_ACCOUNTS.slice();
+    }
+
+    function deriveTeamsFromAccounts(accounts) {
+        const rows = [];
+        const seen = new Set();
+        (accounts || []).forEach((a) => {
+            const teamId = String(a.team_id || '').trim().toUpperCase();
+            if (!teamId || seen.has(teamId)) return;
+            rows.push({
+                team_id: teamId,
+                team_name: String(a.team_name || (teamId === 'HQ' ? '관리자' : `${teamId}팀`)).trim() || teamId,
+                active: true,
+                is_system: teamId === 'HQ'
+            });
+            seen.add(teamId);
+        });
+        if (!seen.has('HQ')) {
+            rows.unshift({ team_id: 'HQ', team_name: '관리자', active: true, is_system: true });
+        }
+        if (!seen.has('MB2')) {
+            rows.push({ team_id: 'MB2', team_name: 'MB2팀', active: true, is_system: false });
+        }
+        rows.sort((a, b) => (a.is_system ? -1 : 1) - (b.is_system ? -1 : 1) || a.team_id.localeCompare(b.team_id));
+        return rows;
+    }
+
+    function getTeamsFallback() {
+        const existing = readJson(TEAMS_KEY, null);
+        if (Array.isArray(existing) && existing.length > 0) return existing;
+        const derived = deriveTeamsFromAccounts(getAccounts());
+        writeJson(TEAMS_KEY, derived);
+        return derived;
+    }
+
+    function saveTeamsFallback(rows) {
+        writeJson(TEAMS_KEY, rows);
     }
 
     function getAccounts() {
@@ -214,6 +251,104 @@
             return Array.isArray(result?.rows) ? result.rows : [];
         }
         return getAccounts();
+    }
+
+    async function listTeams(options = {}) {
+        const includeInactive = Boolean(options.includeInactive);
+        if (window.BTIApiClient?.isConfigured()) {
+            const result = await window.BTIApiClient.getAdminTeams();
+            let rows = Array.isArray(result?.rows) ? result.rows : [];
+            if (!includeInactive) rows = rows.filter(t => t.active !== false);
+            return rows;
+        }
+        let rows = getTeamsFallback();
+        if (!includeInactive) rows = rows.filter(t => t.active !== false);
+        return rows;
+    }
+
+    async function createTeam(payload) {
+        const teamId = String(payload?.team_id || payload?.teamId || '').trim().toUpperCase();
+        const teamName = String(payload?.team_name || payload?.teamName || '').trim();
+        if (!teamId || !teamName) throw new Error('팀 ID와 팀명을 입력해주세요.');
+
+        if (window.BTIApiClient?.isConfigured()) {
+            const result = await window.BTIApiClient.createAdminTeam({ team_id: teamId, team_name: teamName });
+            return result?.team || result;
+        }
+
+        const rows = getTeamsFallback();
+        if (rows.some(t => String(t.team_id).toUpperCase() === teamId)) {
+            throw new Error('이미 존재하는 팀 ID입니다.');
+        }
+        const next = [...rows, { team_id: teamId, team_name: teamName, active: true, is_system: false }];
+        saveTeamsFallback(next);
+        return next[next.length - 1];
+    }
+
+    async function updateTeam(teamId, payload) {
+        const normalizedTeamId = String(teamId || '').trim().toUpperCase();
+        const teamName = String(payload?.team_name || payload?.teamName || '').trim();
+        if (!normalizedTeamId || !teamName) throw new Error('팀 정보가 올바르지 않습니다.');
+
+        if (window.BTIApiClient?.isConfigured()) {
+            const result = await window.BTIApiClient.updateAdminTeam(normalizedTeamId, { team_name: teamName });
+            return result?.team || result;
+        }
+
+        const rows = getTeamsFallback();
+        const idx = rows.findIndex(t => String(t.team_id).toUpperCase() === normalizedTeamId);
+        if (idx < 0) throw new Error('팀을 찾을 수 없습니다.');
+        if (rows[idx].is_system || normalizedTeamId === 'HQ') throw new Error('시스템 팀은 수정할 수 없습니다.');
+        rows[idx] = { ...rows[idx], team_name: teamName };
+        saveTeamsFallback(rows);
+        return rows[idx];
+    }
+
+    async function deactivateTeam(teamId) {
+        const normalizedTeamId = String(teamId || '').trim().toUpperCase();
+        if (!normalizedTeamId) throw new Error('팀 정보가 올바르지 않습니다.');
+
+        if (window.BTIApiClient?.isConfigured()) {
+            const result = await window.BTIApiClient.deactivateAdminTeam(normalizedTeamId);
+            return result?.team || result;
+        }
+
+        const rows = getTeamsFallback();
+        const idx = rows.findIndex(t => String(t.team_id).toUpperCase() === normalizedTeamId);
+        if (idx < 0) throw new Error('팀을 찾을 수 없습니다.');
+        if (rows[idx].is_system || normalizedTeamId === 'HQ') throw new Error('시스템 팀은 비활성화할 수 없습니다.');
+        const accounts = getAccounts();
+        if (accounts.some(a => String(a.team_id).toUpperCase() === normalizedTeamId && a.active !== false)) {
+            throw new Error('활성 계정이 존재하는 팀은 비활성화할 수 없습니다.');
+        }
+        rows[idx] = { ...rows[idx], active: false };
+        saveTeamsFallback(rows);
+        return rows[idx];
+    }
+
+    async function deleteTeam(teamId) {
+        const normalizedTeamId = String(teamId || '').trim().toUpperCase();
+        if (!normalizedTeamId) throw new Error('팀 정보가 올바르지 않습니다.');
+
+        if (window.BTIApiClient?.isConfigured()) {
+            return window.BTIApiClient.deleteAdminTeam(normalizedTeamId);
+        }
+
+        if (normalizedTeamId === 'HQ') throw new Error('시스템 팀은 삭제할 수 없습니다.');
+
+        const rows = getTeamsFallback();
+        const idx = rows.findIndex(t => String(t.team_id).toUpperCase() === normalizedTeamId);
+        if (idx < 0) throw new Error('팀을 찾을 수 없습니다.');
+        if (rows[idx].is_system) throw new Error('시스템 팀은 삭제할 수 없습니다.');
+
+        const accounts = getAccounts();
+        const remainingAccounts = accounts.filter(a => String(a.team_id || '').trim().toUpperCase() !== normalizedTeamId);
+        const deletedAccounts = accounts.filter(a => String(a.team_id || '').trim().toUpperCase() === normalizedTeamId);
+        saveAccounts(remainingAccounts);
+
+        rows.splice(idx, 1);
+        saveTeamsFallback(rows);
+        return { deletedAccountCount: deletedAccounts.length };
     }
 
     function canAccessPage(page, user) {
@@ -424,9 +559,14 @@
         DEFAULT_RESET_PASSWORD,
         getAccounts,
         listAccounts,
+        listTeams,
         getCurrentUser,
         login,
         logout,
+        createTeam,
+        updateTeam,
+        deactivateTeam,
+        deleteTeam,
         createAccount,
         deleteAccount,
         resetPassword,

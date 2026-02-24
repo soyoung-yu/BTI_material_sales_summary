@@ -103,6 +103,21 @@
         getAdminAccounts() {
             return requestJson('GET', '/admin/accounts', { auth: true });
         },
+        getAdminTeams() {
+            return requestJson('GET', '/admin/teams', { auth: true });
+        },
+        createAdminTeam(payload) {
+            return requestJson('POST', '/admin/teams', { body: payload, auth: true });
+        },
+        updateAdminTeam(teamId, payload) {
+            return requestJson('PATCH', `/admin/teams/${encodeURIComponent(teamId)}`, { body: payload, auth: true });
+        },
+        deactivateAdminTeam(teamId) {
+            return requestJson('POST', `/admin/teams/${encodeURIComponent(teamId)}/deactivate`, { auth: true });
+        },
+        deleteAdminTeam(teamId) {
+            return requestJson('DELETE', `/admin/teams/${encodeURIComponent(teamId)}`, { auth: true });
+        },
         createAdminAccount(payload) {
             return requestJson('POST', '/admin/accounts', { body: payload, auth: true });
         },

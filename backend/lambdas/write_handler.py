@@ -17,12 +17,14 @@ MATERIALS_KEY = os.environ.get('BTI_MATERIALS_LATEST_KEY', 'materials/latest.jso
 ACCOUNTS_KEY = os.environ.get('BTI_ACCOUNTS_KEY', 'auth/accounts.json')
 TEAMS_KEY = os.environ.get('BTI_TEAMS_KEY', 'auth/teams.json')
 MATERIAL_REQUESTS_KEY = os.environ.get('BTI_MATERIAL_REQUESTS_KEY', 'materials/requests_store.json')
+MATERIAL_REQUESTS_ENABLED = str(os.environ.get('BTI_MATERIAL_REQUESTS_ENABLED', 'true')).lower() == 'true'
 ALLOWED_ORIGIN = os.environ.get('ALLOWED_ORIGIN', '*')
 AUTH_SECRET = os.environ.get('BTI_AUTH_SECRET', 'dev-change-this-secret')
 DEFAULT_RESET_PASSWORD = os.environ.get('BTI_DEFAULT_RESET_PASSWORD', 'firstpassword')
 TOKEN_EXPIRES_HOURS = int(os.environ.get('BTI_AUTH_TOKEN_EXPIRES_HOURS', '12'))
 LEGACY_DEFAULT_TEAM_ID = os.environ.get('BTI_LEGACY_DEFAULT_TEAM_ID', 'MB2')
 LEGACY_DEFAULT_TEAM_NAME = os.environ.get('BTI_LEGACY_DEFAULT_TEAM_NAME', 'MB2팀')
+DEFAULT_COMP_ID = str(os.environ.get('COMP_ID', '1200'))
 
 ROLES = {'ADMIN', 'TEAM_ADMIN', 'TEAM_MEMBER'}
 
@@ -396,6 +398,12 @@ def _normalize_materials_rows(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]
         default_team_name = LEGACY_DEFAULT_TEAM_NAME if team_id == LEGACY_DEFAULT_TEAM_ID else f'{team_id}팀'
         item['team_id'] = team_id
         item['team_name'] = str(item.get('team_name') or default_team_name).strip() or default_team_name
+        item['comp_id'] = str(item.get('comp_id') or item.get('compid') or DEFAULT_COMP_ID).strip() or DEFAULT_COMP_ID
+        item['raw_user_id'] = str(item.get('raw_user_id') or item.get('researcher_id') or '').strip()
+        item['raw_user_nm'] = str(item.get('raw_user_nm') or item.get('researcher') or '').strip()
+        if not str(item.get('researcher') or '').strip():
+            item['researcher'] = item['raw_user_nm']
+        item['mmsta'] = str(item.get('mmsta') or item.get('status') or '').strip()
         normalized.append(item)
     return normalized
 
@@ -671,14 +679,27 @@ def _normalize_material_request_payload(body: Dict[str, Any]) -> Dict[str, Any]:
             'raw_nm': body.get('raw_nm') or body.get('rawNm'),
             'mmsta': body.get('mmsta', ''),
             'researcher': body.get('researcher', ''),
+            'comp_id': body.get('comp_id') or body.get('compId') or body.get('compid'),
+            'raw_user_id': body.get('raw_user_id') or body.get('rawUserId') or body.get('researcher_id'),
+            'raw_user_nm': body.get('raw_user_nm') or body.get('rawUserNm') or body.get('researcher'),
             'created': body.get('created', ''),
             'approval_status': body.get('approval_status', ''),
+        }
+    else:
+        payload = {
+            **payload,
+            'comp_id': payload.get('comp_id') or payload.get('compId') or payload.get('compid'),
+            'raw_user_id': payload.get('raw_user_id') or payload.get('rawUserId') or payload.get('researcher_id'),
+            'raw_user_nm': payload.get('raw_user_nm') or payload.get('rawUserNm') or payload.get('researcher'),
+            'mmsta': payload.get('mmsta') or payload.get('status') or '',
         }
     return {'request_type': request_type, 'payload': payload}
 
 
 def _handle_material_requests_create(event: Dict[str, Any]) -> Dict[str, Any]:
     user = _require_auth(event)
+    if not MATERIAL_REQUESTS_ENABLED:
+        return _response(403, {'message': '현재 소재 추가/수정/삭제 신청 기능은 점검 중입니다.'})
     body = _parse_json_body(event)
     normalized = _normalize_material_request_payload(body)
 
@@ -686,6 +707,9 @@ def _handle_material_requests_create(event: Dict[str, Any]) -> Dict[str, Any]:
         **(normalized.get('payload') or {}),
         'team_id': user.get('team_id'),
         'team_name': user.get('team_name'),
+        'comp_id': str((normalized.get('payload') or {}).get('comp_id') or DEFAULT_COMP_ID),
+        'raw_user_id': str((normalized.get('payload') or {}).get('raw_user_id') or user.get('login_id') or ''),
+        'raw_user_nm': str((normalized.get('payload') or {}).get('raw_user_nm') or user.get('name') or ''),
     }
 
     req = {
@@ -699,6 +723,9 @@ def _handle_material_requests_create(event: Dict[str, Any]) -> Dict[str, Any]:
         'approved_by_account_id': None,
         'approved_by_name': None,
         'approved_at': None,
+        'rejected_by_account_id': None,
+        'rejected_by_name': None,
+        'rejected_at': None,
         'created_at': _utcnow().isoformat(),
     }
     rows = _load_material_requests()
@@ -709,10 +736,12 @@ def _handle_material_requests_create(event: Dict[str, Any]) -> Dict[str, Any]:
 
 def _handle_material_requests_list(event: Dict[str, Any]) -> Dict[str, Any]:
     user = _require_auth(event)
-    _require_roles(user, {'TEAM_ADMIN', 'ADMIN'})
+    _require_roles(user, {'TEAM_MEMBER', 'TEAM_ADMIN', 'ADMIN'})
     rows = _load_material_requests()
     if user.get('role') == 'TEAM_ADMIN':
         rows = [r for r in rows if str(r.get('team_id')) == str(user.get('team_id'))]
+    elif user.get('role') == 'TEAM_MEMBER':
+        rows = [r for r in rows if str(r.get('requested_by_account_id')) == str(user.get('account_id'))]
     return _response(200, {'rows': rows, 'meta': {'rowCount': len(rows)}})
 
 
@@ -730,6 +759,9 @@ def _apply_request_to_materials(materials_rows: List[Dict[str, Any]], request_ro
             'raw_nm': payload.get('raw_nm', ''),
             'mmsta': payload.get('mmsta', ''),
             'researcher': payload.get('researcher', request_row.get('requested_by_name', '')),
+            'comp_id': str(payload.get('comp_id') or DEFAULT_COMP_ID),
+            'raw_user_id': str(payload.get('raw_user_id') or request_row.get('requested_by_account_id') or ''),
+            'raw_user_nm': str(payload.get('raw_user_nm') or request_row.get('requested_by_name') or ''),
             'created': payload.get('created') or _utcnow().date().isoformat(),
             'approval_status': '완료',
             'team_id': request_team_id,
@@ -748,6 +780,9 @@ def _apply_request_to_materials(materials_rows: List[Dict[str, Any]], request_ro
             'raw_nm': payload.get('raw_nm', ''),
             'mmsta': payload.get('mmsta', ''),
             'researcher': payload.get('researcher', request_row.get('requested_by_name', '')),
+            'comp_id': str(payload.get('comp_id') or DEFAULT_COMP_ID),
+            'raw_user_id': str(payload.get('raw_user_id') or request_row.get('requested_by_account_id') or ''),
+            'raw_user_nm': str(payload.get('raw_user_nm') or request_row.get('requested_by_name') or ''),
             'created': payload.get('created') or _utcnow().date().isoformat(),
             'approval_status': '완료',
             'team_id': request_team_id,
@@ -764,6 +799,9 @@ def _apply_request_to_materials(materials_rows: List[Dict[str, Any]], request_ro
             **rows[idx],
             **{k: v for k, v in payload.items() if v is not None},
             'approval_status': '완료',
+            'comp_id': str(payload.get('comp_id') or rows[idx].get('comp_id') or DEFAULT_COMP_ID),
+            'raw_user_id': str(payload.get('raw_user_id') or rows[idx].get('raw_user_id') or request_row.get('requested_by_account_id') or ''),
+            'raw_user_nm': str(payload.get('raw_user_nm') or rows[idx].get('raw_user_nm') or request_row.get('requested_by_name') or ''),
             'team_id': request_team_id,
             'team_name': request_team_name
         }
@@ -801,6 +839,36 @@ def _handle_material_requests_approve(event: Dict[str, Any]) -> Dict[str, Any]:
         'approved_by_account_id': user.get('account_id'),
         'approved_by_name': user.get('name'),
         'approved_at': _utcnow().isoformat()
+    }
+    _save_material_requests(req_rows)
+    return _response(200, {'request': req_rows[idx]})
+
+
+def _handle_material_requests_reject(event: Dict[str, Any]) -> Dict[str, Any]:
+    user = _require_auth(event)
+    _require_roles(user, {'TEAM_ADMIN', 'ADMIN'})
+    path_params = event.get('pathParameters') or {}
+    request_id = str(path_params.get('requestId') or '').strip()
+    if not request_id:
+        return _response(400, {'message': 'requestId path parameter가 필요합니다.'})
+
+    req_rows = _load_material_requests()
+    idx = next((i for i, r in enumerate(req_rows) if r.get('request_id') == request_id), -1)
+    if idx < 0:
+        return _response(404, {'message': '요청을 찾을 수 없습니다.'})
+
+    req = req_rows[idx]
+    if req.get('request_status') != 'PENDING':
+        return _response(400, {'message': '이미 처리된 요청입니다.'})
+    if user.get('role') == 'TEAM_ADMIN' and str(req.get('team_id')) != str(user.get('team_id')):
+        return _response(403, {'message': '본인 팀 요청만 반려할 수 있습니다.'})
+
+    req_rows[idx] = {
+        **req_rows[idx],
+        'request_status': 'REJECTED',
+        'rejected_by_account_id': user.get('account_id'),
+        'rejected_by_name': user.get('name'),
+        'rejected_at': _utcnow().isoformat()
     }
     _save_material_requests(req_rows)
     return _response(200, {'request': req_rows[idx]})
@@ -855,6 +923,9 @@ def lambda_handler(event: Dict[str, Any], _context: Any) -> Dict[str, Any]:
 
         if '/materials/requests/' in path and path.endswith('/approve') and method == 'POST':
             return _handle_material_requests_approve(event)
+
+        if '/materials/requests/' in path and path.endswith('/reject') and method == 'POST':
+            return _handle_material_requests_reject(event)
 
         return _response(404, {'message': f'Unknown path/method: {method} {path}'})
     except PermissionError as exc:

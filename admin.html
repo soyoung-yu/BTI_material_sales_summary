@@ -7,40 +7,443 @@
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <style>
         * { box-sizing: border-box; }
-        body { margin: 0; font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:#f8fafc; color:#0f172a; }
-        .header { background:#1a365d; color:#fff; padding:16px 24px; display:flex; justify-content:space-between; align-items:center; }
-        .header h1 { margin:0; font-size:20px; }
-        .user-info { display:flex; align-items:center; gap:8px; }
-        .team-badge { background:rgba(255,255,255,.16); padding:4px 10px; border-radius:999px; font-size:12px; }
-        .nav { background:#fff; border-bottom:1px solid #e2e8f0; }
-        .nav ul { margin:0; padding:0 24px; list-style:none; display:flex; gap:8px; }
-        .nav a { display:block; padding:14px 16px; text-decoration:none; color:#475569; border-bottom:2px solid transparent; }
-        .nav a.active { color:#1a365d; border-bottom-color:#1a365d; font-weight:600; }
-        .main { padding:24px; max-width:1100px; margin:0 auto; }
-        .page-header { margin-bottom:18px; }
-        .page-title { margin:0 0 6px; font-size:24px; }
-        .page-desc { margin:0; color:#64748b; }
-        .grid { display:grid; grid-template-columns: 1fr 1fr; gap:16px; align-items:start; }
-        .card { background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:16px; }
-        .card h3 { margin:0 0 12px; font-size:16px; }
-        .field { display:flex; flex-direction:column; gap:6px; margin-bottom:10px; }
-        .field input, .field select { padding:10px 12px; border:1px solid #cbd5e1; border-radius:8px; }
-        .actions { display:flex; justify-content:flex-end; gap:8px; margin-top:8px; }
-        .btn { border:1px solid #cbd5e1; background:#fff; color:#0f172a; padding:10px 12px; border-radius:8px; cursor:pointer; }
-        .btn.primary { background:#1a365d; color:#fff; border-color:#1a365d; }
-        .muted { color:#64748b; font-size:13px; }
-        table { width:100%; border-collapse:collapse; font-size:13px; }
-        th, td { border-bottom:1px solid #e2e8f0; padding:10px 8px; text-align:left; }
-        th { color:#475569; background:#f8fafc; }
-        .row-actions{display:flex;gap:6px;flex-wrap:wrap}
-        .btn.sm{padding:6px 8px;font-size:12px}
-        .btn.danger{color:#b91c1c;border-color:#fecaca;background:#fff5f5}
-        .toast { position:fixed; right:24px; bottom:24px; background:#1a365d; color:#fff; padding:12px 16px; border-radius:8px; opacity:0; transform:translateY(8px); transition:.2s; }
-        .toast.show { opacity:1; transform:translateY(0); }
-        .full-span { grid-column: 1 / -1; }
-        .inline-edit { display:flex; gap:6px; align-items:center; }
-        .inline-edit input { flex:1; min-width:140px; padding:6px 8px; border:1px solid #cbd5e1; border-radius:6px; }
-        @media (max-width: 900px) { .grid { grid-template-columns:1fr; } }
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: #f8fafc;
+            color: #0f172a;
+        }
+        .header {
+            background: #1a365d;
+            color: #fff;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 { margin: 0; font-size: 20px; }
+        .user-info { display: flex; align-items: center; gap: 8px; }
+        .team-badge {
+            background: rgba(255,255,255,.16);
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+        }
+        .nav { background: #fff; border-bottom: 1px solid #e2e8f0; }
+        .nav ul {
+            margin: 0;
+            padding: 0 24px;
+            list-style: none;
+            display: flex;
+            gap: 8px;
+        }
+        .nav a {
+            display: block;
+            padding: 14px 16px;
+            text-decoration: none;
+            color: #475569;
+            border-bottom: 2px solid transparent;
+        }
+        .nav a.active {
+            color: #1a365d;
+            border-bottom-color: #1a365d;
+            font-weight: 600;
+        }
+
+        .main {
+            padding: 20px;
+            max-width: 1380px;
+            margin: 0 auto;
+        }
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 16px;
+            margin-bottom: 14px;
+        }
+        .page-title { margin: 0 0 4px; font-size: 24px; }
+        .page-desc { margin: 0; color: #64748b; }
+
+        .btn {
+            border: 1px solid #cbd5e1;
+            background: #fff;
+            color: #0f172a;
+            padding: 10px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn:hover { background: #f8fafc; }
+        .btn:disabled {
+            cursor: not-allowed;
+            opacity: .5;
+        }
+        .btn.primary {
+            background: #1a365d;
+            color: #fff;
+            border-color: #1a365d;
+        }
+        .btn.primary:hover { background: #173055; }
+        .btn.sm {
+            padding: 6px 8px;
+            font-size: 12px;
+            border-radius: 6px;
+        }
+        .btn.ghost {
+            background: transparent;
+            border-color: transparent;
+            color: #475569;
+        }
+        .btn.danger {
+            color: #b91c1c;
+            border-color: #fecaca;
+            background: #fff5f5;
+        }
+        .btn.danger:hover { background: #ffe4e6; }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .summary-card {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 14px;
+        }
+        .summary-label {
+            color: #64748b;
+            font-size: 12px;
+            margin-bottom: 6px;
+        }
+        .summary-value {
+            font-size: 22px;
+            font-weight: 700;
+            line-height: 1.1;
+        }
+
+        .workspace {
+            display: grid;
+            grid-template-columns: 340px minmax(0, 1fr);
+            gap: 16px;
+            align-items: start;
+        }
+        .panel {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .panel-header {
+            padding: 14px 16px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+        }
+        .panel-header h3 {
+            margin: 0;
+            font-size: 15px;
+        }
+        .panel-body { padding: 14px 16px; }
+
+        .muted { color: #64748b; font-size: 13px; }
+        .row { display: flex; gap: 8px; }
+        .row.wrap { flex-wrap: wrap; }
+        .spacer { flex: 1; }
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 10px;
+            min-width: 0;
+        }
+        .field label {
+            font-size: 13px;
+            color: #475569;
+        }
+        .field input,
+        .field select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            background: #fff;
+            font-size: 14px;
+        }
+        .field input[readonly] {
+            background: #f8fafc;
+            color: #475569;
+        }
+        .field.inline { margin-bottom: 0; }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 8px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
+            border: 1px solid transparent;
+        }
+        .badge-success { background: #ecfdf5; color: #065f46; border-color: #a7f3d0; }
+        .badge-muted { background: #f1f5f9; color: #475569; border-color: #cbd5e1; }
+        .badge-system { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+        .badge-role-admin { background: #eef2ff; color: #4338ca; border-color: #c7d2fe; }
+        .badge-role-member { background: #f8fafc; color: #334155; border-color: #cbd5e1; }
+        .badge-role-teamadmin { background: #ecfeff; color: #155e75; border-color: #a5f3fc; }
+
+        .toolbar {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .toolbar .field { margin-bottom: 0; }
+        .toolbar .field input,
+        .toolbar .field select { padding: 8px 10px; }
+
+        .team-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 640px;
+            overflow: auto;
+            padding-right: 4px;
+        }
+        .team-item {
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 10px;
+            cursor: pointer;
+            background: #fff;
+        }
+        .team-item:hover { border-color: #94a3b8; }
+        .team-item.is-selected {
+            border-color: #1a365d;
+            box-shadow: 0 0 0 2px rgba(26,54,93,.08);
+            background: #f8fbff;
+        }
+        .team-item-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+        .team-name { font-weight: 700; font-size: 14px; }
+        .team-id { color: #64748b; font-size: 12px; }
+        .team-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 14px;
+        }
+        .detail-split {
+            display: grid;
+            grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+            gap: 14px;
+        }
+        .sub-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            background: #fff;
+        }
+        .sub-card .head {
+            padding: 12px 14px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+        }
+        .sub-card .head h4 {
+            margin: 0;
+            font-size: 14px;
+        }
+        .sub-card .body { padding: 12px 14px; }
+
+        .kv-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+        .kv-item {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 10px;
+            background: #f8fafc;
+        }
+        .kv-label { font-size: 12px; color: #64748b; margin-bottom: 4px; }
+        .kv-value { font-size: 14px; font-weight: 600; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        th, td {
+            border-bottom: 1px solid #e2e8f0;
+            padding: 9px 8px;
+            text-align: left;
+            vertical-align: top;
+        }
+        th {
+            color: #475569;
+            background: #f8fafc;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+        .table-wrap {
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            overflow: auto;
+            max-height: 420px;
+            background: #fff;
+        }
+        .row-actions {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .empty-state {
+            border: 1px dashed #cbd5e1;
+            border-radius: 12px;
+            background: #fff;
+            padding: 28px;
+            text-align: center;
+            color: #64748b;
+        }
+        .empty-state h3 { margin: 0 0 8px; color: #334155; }
+
+        .danger-zone {
+            border: 1px solid #fecaca;
+            border-radius: 10px;
+            background: #fff7f7;
+            padding: 12px;
+        }
+        .danger-zone h4 {
+            margin: 0 0 10px;
+            color: #991b1b;
+            font-size: 14px;
+        }
+        .danger-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 10px;
+            border: 1px solid #fee2e2;
+            border-radius: 8px;
+            background: #fff;
+        }
+        .danger-item + .danger-item { margin-top: 8px; }
+        .danger-title { font-weight: 600; font-size: 13px; }
+        .danger-desc { color: #64748b; font-size: 12px; margin-top: 2px; }
+
+        .status-banner {
+            border: 1px solid #e2e8f0;
+            background: #f8fafc;
+            color: #475569;
+            border-radius: 10px;
+            padding: 10px 12px;
+            font-size: 13px;
+            margin-bottom: 12px;
+        }
+        .status-banner.warn {
+            border-color: #fde68a;
+            background: #fffbeb;
+            color: #92400e;
+        }
+
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.45);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            z-index: 100;
+        }
+        .modal-backdrop.show { display: flex; }
+        .modal {
+            width: 100%;
+            max-width: 460px;
+            background: #fff;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 20px 50px rgba(15, 23, 42, 0.2);
+        }
+        .modal-header {
+            padding: 14px 16px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-header h3 { margin: 0; font-size: 16px; }
+        .modal-body { padding: 14px 16px; }
+        .modal-footer {
+            padding: 12px 16px;
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+
+        .toast {
+            position: fixed;
+            right: 24px;
+            bottom: 24px;
+            background: #1a365d;
+            color: #fff;
+            padding: 12px 16px;
+            border-radius: 8px;
+            opacity: 0;
+            transform: translateY(8px);
+            transition: .2s;
+            z-index: 120;
+            max-width: 420px;
+            box-shadow: 0 12px 30px rgba(15,23,42,.2);
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        @media (max-width: 1200px) {
+            .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .workspace { grid-template-columns: 300px minmax(0, 1fr); }
+            .detail-split { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 900px) {
+            .page-header { flex-direction: column; }
+            .workspace { grid-template-columns: 1fr; }
+            .team-list { max-height: none; }
+        }
+        @media (max-width: 600px) {
+            .summary-grid { grid-template-columns: 1fr; }
+            .main { padding: 14px; }
+            .kv-grid { grid-template-columns: 1fr; }
+            .toolbar { flex-direction: column; align-items: stretch; }
+            .toolbar .field { width: 100%; }
+            .row-actions { flex-direction: column; align-items: stretch; }
+        }
     </style>
 </head>
 <body>
@@ -53,279 +456,692 @@
 
     <main class="main">
         <div class="page-header">
-            <h2 class="page-title">관리자</h2>
-            <p class="page-desc">일반 계정(팀 관리자/팀원)을 생성하고 계정 목록을 확인합니다.</p>
+            <div>
+                <h2 class="page-title">관리자</h2>
+                <p class="page-desc">팀과 일반 계정을 팀 단위로 관리합니다. 팀을 먼저 선택하면 계정 생성/초기화/삭제를 해당 팀 기준으로 처리할 수 있습니다.</p>
+            </div>
+            <div class="row wrap">
+                <button class="btn" id="refreshBtn">새로고침</button>
+                <button class="btn primary" id="openCreateTeamBtn">팀 생성</button>
+            </div>
         </div>
 
-        <div class="grid">
-            <section class="card full-span">
-                <h3>팀 관리</h3>
-                <div class="grid" style="grid-template-columns:1fr 2fr; gap:12px;">
-                    <div>
-                        <div class="field"><label>팀 ID</label><input id="newTeamId" type="text" placeholder="예: MB3"></div>
-                        <div class="field"><label>팀명</label><input id="newTeamName" type="text" placeholder="예: MB3팀"></div>
-                        <div class="actions">
-                            <button class="btn primary" id="createTeamBtn">팀 생성</button>
+        <section class="summary-grid" id="summaryGrid">
+            <div class="summary-card"><div class="summary-label">활성 팀 수</div><div class="summary-value" id="summaryActiveTeams">-</div></div>
+            <div class="summary-card"><div class="summary-label">전체 팀 수</div><div class="summary-value" id="summaryAllTeams">-</div></div>
+            <div class="summary-card"><div class="summary-label">전체 계정 수</div><div class="summary-value" id="summaryAllAccounts">-</div></div>
+            <div class="summary-card"><div class="summary-label">팀 관리자 / 팀원</div><div class="summary-value" id="summaryRoleCounts">-</div></div>
+        </section>
+
+        <section class="workspace">
+            <aside class="panel" aria-label="팀 목록 패널">
+                <div class="panel-header">
+                    <h3>팀 목록</h3>
+                    <span class="muted" id="teamListCount">-</span>
+                </div>
+                <div class="panel-body">
+                    <div class="toolbar" style="margin-bottom:10px;">
+                        <div class="field inline" style="flex:1; min-width:160px;">
+                            <label for="teamSearch" class="muted">검색</label>
+                            <input id="teamSearch" type="text" placeholder="팀 ID 또는 팀명">
                         </div>
-                        <p class="muted">팀은 비활성화 또는 삭제할 수 있습니다. 삭제 시 해당 팀 계정이 일괄 삭제됩니다.</p>
+                        <div class="field inline" style="width:120px;">
+                            <label for="teamStatusFilter" class="muted">상태</label>
+                            <select id="teamStatusFilter">
+                                <option value="ALL">전체</option>
+                                <option value="ACTIVE">활성</option>
+                                <option value="INACTIVE">비활성</option>
+                            </select>
+                        </div>
                     </div>
-                    <div style="overflow:auto;">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>팀 ID</th>
-                                    <th>팀명</th>
-                                    <th>상태</th>
-                                    <th>관리</th>
-                                </tr>
-                            </thead>
-                            <tbody id="teamsTbody"></tbody>
-                        </table>
+                    <div class="team-list" id="teamList"></div>
+                </div>
+            </aside>
+
+            <section class="panel" aria-label="팀 상세 패널">
+                <div class="panel-header">
+                    <h3 id="detailHeaderTitle">팀 상세</h3>
+                    <span class="muted" id="detailHeaderHint">좌측에서 팀을 선택하세요.</span>
+                </div>
+                <div class="panel-body" id="teamDetailRoot">
+                    <div class="empty-state" id="teamDetailEmpty">
+                        <h3>관리할 팀을 선택하세요</h3>
+                        <p>좌측 팀 목록에서 팀을 선택하면 팀 정보, 계정 생성, 계정 목록, 위험 작업을 한 화면에서 관리할 수 있습니다.</p>
+                        <div style="margin-top:12px;">
+                            <button class="btn primary" id="emptyCreateTeamBtn">팀 생성</button>
+                        </div>
+                    </div>
+
+                    <div id="teamDetailContent" style="display:none;">
+                        <div class="detail-grid">
+                            <div class="sub-card">
+                                <div class="head">
+                                    <h4>팀 정보</h4>
+                                    <div class="row wrap" style="justify-content:flex-end;">
+                                        <span id="selectedTeamStatusBadge" class="badge badge-muted">-</span>
+                                    </div>
+                                </div>
+                                <div class="body">
+                                    <div id="selectedTeamBanner"></div>
+                                    <div class="detail-split">
+                                        <div>
+                                            <div class="field">
+                                                <label>팀 ID</label>
+                                                <input id="selectedTeamIdInput" type="text" readonly>
+                                            </div>
+                                            <div class="field">
+                                                <label>팀명</label>
+                                                <input id="selectedTeamNameInput" type="text" placeholder="팀명을 입력하세요">
+                                            </div>
+                                            <div class="row" style="justify-content:flex-end; margin-top:6px;">
+                                                <button class="btn primary" id="saveTeamNameBtn">팀명 저장</button>
+                                            </div>
+                                            <div class="muted" id="selectedTeamSystemHint" style="margin-top:8px;"></div>
+                                        </div>
+                                        <div class="kv-grid">
+                                            <div class="kv-item">
+                                                <div class="kv-label">팀 계정 수</div>
+                                                <div class="kv-value" id="selectedTeamAccountCount">-</div>
+                                            </div>
+                                            <div class="kv-item">
+                                                <div class="kv-label">활성 계정 수</div>
+                                                <div class="kv-value" id="selectedTeamActiveAccountCount">-</div>
+                                            </div>
+                                            <div class="kv-item">
+                                                <div class="kv-label">팀 관리자 수</div>
+                                                <div class="kv-value" id="selectedTeamAdminCount">-</div>
+                                            </div>
+                                            <div class="kv-item">
+                                                <div class="kv-label">팀원 수</div>
+                                                <div class="kv-value" id="selectedTeamMemberCount">-</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="detail-split">
+                                <div class="sub-card">
+                                    <div class="head"><h4>이 팀에 계정 생성</h4></div>
+                                    <div class="body">
+                                        <div class="muted" id="accountFormTeamHint" style="margin-bottom:10px;">선택한 팀 기준으로 일반 계정을 생성합니다.</div>
+                                        <div class="field"><label>로그인 ID</label><input id="loginId" type="text"></div>
+                                        <div class="field"><label>비밀번호</label><input id="password" type="password"></div>
+                                        <div class="field"><label>이름</label><input id="name" type="text"></div>
+                                        <div class="field"><label>권한</label>
+                                            <select id="role">
+                                                <option value="TEAM_MEMBER">팀원</option>
+                                                <option value="TEAM_ADMIN">팀 관리자</option>
+                                            </select>
+                                        </div>
+                                        <div class="row" style="justify-content:flex-end; margin-top:6px;">
+                                            <button class="btn primary" id="createAccountBtn">계정 생성</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="sub-card">
+                                    <div class="head"><h4>위험 작업</h4></div>
+                                    <div class="body">
+                                        <div class="danger-zone">
+                                            <h4>주의: 팀 단위 변경</h4>
+                                            <div class="danger-item">
+                                                <div>
+                                                    <div class="danger-title">팀 비활성화</div>
+                                                    <div class="danger-desc">활성 계정이 존재하면 비활성화할 수 없습니다.</div>
+                                                </div>
+                                                <button class="btn sm" id="deactivateTeamBtn">팀 비활성화</button>
+                                            </div>
+                                            <div class="danger-item">
+                                                <div>
+                                                    <div class="danger-title">팀 삭제</div>
+                                                    <div class="danger-desc">해당 팀 계정이 함께 삭제됩니다 (cascade).</div>
+                                                </div>
+                                                <button class="btn sm danger" id="deleteTeamBtn">팀 삭제</button>
+                                            </div>
+                                        </div>
+                                        <div class="muted" id="dangerZoneHint" style="margin-top:8px;"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="sub-card">
+                                <div class="head">
+                                    <h4>팀 계정 목록</h4>
+                                    <span class="muted" id="selectedAccountsCount">총 0개 계정</span>
+                                </div>
+                                <div class="body">
+                                    <div class="toolbar" style="margin-bottom:10px;">
+                                        <div class="field inline" style="flex:1; min-width:180px;">
+                                            <label for="accountSearch" class="muted">검색</label>
+                                            <input id="accountSearch" type="text" placeholder="로그인 ID 또는 이름 검색">
+                                        </div>
+                                        <div class="field inline" style="width:130px;">
+                                            <label for="accountRoleFilter" class="muted">권한</label>
+                                            <select id="accountRoleFilter">
+                                                <option value="ALL">전체</option>
+                                                <option value="TEAM_ADMIN">팀 관리자</option>
+                                                <option value="TEAM_MEMBER">팀원</option>
+                                            </select>
+                                        </div>
+                                        <div class="field inline" style="width:130px;">
+                                            <label for="accountStatusFilter" class="muted">상태</label>
+                                            <select id="accountStatusFilter">
+                                                <option value="ALL">전체</option>
+                                                <option value="ACTIVE">활성</option>
+                                                <option value="INACTIVE">비활성</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="table-wrap">
+                                        <table>
+                                            <thead>
+                                                <tr>
+                                                    <th>ID</th>
+                                                    <th>이름</th>
+                                                    <th>권한</th>
+                                                    <th>상태</th>
+                                                    <th>관리</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="accountsTbody"></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>
-
-            <section class="card">
-                <h3>일반 계정 생성</h3>
-                <div class="field"><label>로그인 ID</label><input id="loginId" type="text"></div>
-                <div class="field"><label>비밀번호</label><input id="password" type="password"></div>
-                <div class="field"><label>이름</label><input id="name" type="text"></div>
-                <div class="field">
-                    <label>팀 선택</label>
-                    <select id="teamSelect"></select>
-                </div>
-                <div class="field">
-                    <label>권한</label>
-                    <select id="role">
-                        <option value="TEAM_MEMBER">팀원</option>
-                        <option value="TEAM_ADMIN">팀 관리자</option>
-                    </select>
-                </div>
-                <div class="actions">
-                    <button class="btn primary" id="createAccountBtn">계정 생성</button>
-                </div>
-                <p class="muted" id="accountFormHint">관리자 탭에서는 일반 계정만 생성할 수 있습니다.</p>
-            </section>
-
-            <section class="card">
-                <h3>계정 목록</h3>
-                <div id="accountCount" class="muted" style="margin-bottom:8px;"></div>
-                <div style="overflow:auto;">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>이름</th>
-                                <th>팀</th>
-                                <th>권한</th>
-                                <th>상태</th>
-                                <th>관리</th>
-                            </tr>
-                        </thead>
-                        <tbody id="accountsTbody"></tbody>
-                    </table>
-                </div>
-            </section>
-        </div>
+        </section>
     </main>
+
+    <div class="modal-backdrop" id="createTeamModalBackdrop" aria-hidden="true">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="createTeamModalTitle">
+            <div class="modal-header">
+                <h3 id="createTeamModalTitle">팀 생성</h3>
+                <button class="btn ghost sm" id="closeCreateTeamModalBtn" aria-label="팀 생성 팝업 닫기">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="field"><label>팀 ID</label><input id="newTeamId" type="text" placeholder="예: MB3"></div>
+                <div class="field"><label>팀명</label><input id="newTeamName" type="text" placeholder="예: MB3팀"></div>
+                <p class="muted">팀 삭제 시 해당 팀 계정은 일괄 삭제됩니다. 시스템 팀(HQ)은 생성/삭제 대상이 아닙니다.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" id="cancelCreateTeamBtn">취소</button>
+                <button class="btn primary" id="createTeamBtn">팀 생성</button>
+            </div>
+        </div>
+    </div>
 
     <div class="toast" id="toast"></div>
 
     <script src="api-config.js"></script>
-    <script src="api-client.js"></script>
-    <script src="auth.js"></script>
+    <script src="api-client.js?v=20260225b"></script>
+    <script src="auth.js?v=20260225a"></script>
     <script>
         let currentUser = null;
         let teamsCache = [];
+        let accountsCache = [];
+        let selectedTeamId = '';
+
+        const state = {
+            teamSearchQuery: '',
+            teamStatusFilter: 'ALL',
+            accountSearchQuery: '',
+            accountRoleFilter: 'ALL',
+            accountStatusFilter: 'ALL'
+        };
 
         document.addEventListener('DOMContentLoaded', async () => {
             const auth = window.BTIAuth.bootstrap({ page: 'admin' });
             if (auth?.denied) return;
             currentUser = auth.user;
-            document.getElementById('createTeamBtn').addEventListener('click', onCreateTeam);
-            document.getElementById('createAccountBtn').addEventListener('click', onCreateAccount);
-            await renderTeams();
-            await refreshTeamSelect();
-            await renderAccounts();
+
+            bindEvents();
+            await reloadAdminData({ preserveSelection: false });
         });
 
-        async function renderTeams() {
-            teamsCache = await window.BTIAuth.listTeams({ includeInactive: true });
-            const tbody = document.getElementById('teamsTbody');
-            tbody.innerHTML = teamsCache.map(t => {
-                const teamId = String(t.team_id || '');
-                const teamName = t.team_name || teamId;
-                const isSystem = Boolean(t.is_system) || teamId === 'HQ';
-                const isActive = t.active !== false;
+        function bindEvents() {
+            document.getElementById('refreshBtn').addEventListener('click', () => reloadAdminData({ preserveSelection: true }));
+            document.getElementById('openCreateTeamBtn').addEventListener('click', openCreateTeamModal);
+            document.getElementById('emptyCreateTeamBtn').addEventListener('click', openCreateTeamModal);
+            document.getElementById('closeCreateTeamModalBtn').addEventListener('click', closeCreateTeamModal);
+            document.getElementById('cancelCreateTeamBtn').addEventListener('click', closeCreateTeamModal);
+            document.getElementById('createTeamBtn').addEventListener('click', onCreateTeam);
+
+            document.getElementById('teamSearch').addEventListener('input', (e) => {
+                state.teamSearchQuery = e.target.value || '';
+                renderTeamList();
+            });
+            document.getElementById('teamStatusFilter').addEventListener('change', (e) => {
+                state.teamStatusFilter = e.target.value || 'ALL';
+                renderTeamList();
+            });
+
+            document.getElementById('saveTeamNameBtn').addEventListener('click', onSaveSelectedTeamName);
+            document.getElementById('createAccountBtn').addEventListener('click', onCreateAccountForSelectedTeam);
+            document.getElementById('deactivateTeamBtn').addEventListener('click', onDeactivateSelectedTeam);
+            document.getElementById('deleteTeamBtn').addEventListener('click', onDeleteSelectedTeam);
+
+            document.getElementById('accountSearch').addEventListener('input', (e) => {
+                state.accountSearchQuery = e.target.value || '';
+                renderSelectedTeamAccounts();
+            });
+            document.getElementById('accountRoleFilter').addEventListener('change', (e) => {
+                state.accountRoleFilter = e.target.value || 'ALL';
+                renderSelectedTeamAccounts();
+            });
+            document.getElementById('accountStatusFilter').addEventListener('change', (e) => {
+                state.accountStatusFilter = e.target.value || 'ALL';
+                renderSelectedTeamAccounts();
+            });
+
+            document.getElementById('createTeamModalBackdrop').addEventListener('click', (e) => {
+                if (e.target.id === 'createTeamModalBackdrop') return;
+            });
+        }
+
+        async function reloadAdminData({ preserveSelection = true } = {}) {
+            const prevSelected = preserveSelection ? selectedTeamId : '';
+            try {
+                const [teams, accounts] = await Promise.all([
+                    window.BTIAuth.listTeams({ includeInactive: true }),
+                    window.BTIAuth.listAccounts()
+                ]);
+                teamsCache = Array.isArray(teams) ? teams.slice() : [];
+                accountsCache = Array.isArray(accounts) ? accounts.slice() : [];
+
+                selectedTeamId = resolveSelectedTeamId(prevSelected);
+                renderSummaryCards();
+                renderTeamList();
+                renderTeamDetailWorkspace();
+            } catch (err) {
+                showToast(err.message || '관리자 데이터를 불러오지 못했습니다.');
+            }
+        }
+
+        function resolveSelectedTeamId(prevSelected) {
+            if (prevSelected && teamsCache.some(t => String(t.team_id) === String(prevSelected))) {
+                return prevSelected;
+            }
+            const firstActive = teamsCache.find(t => t.active !== false && String(t.team_id || '').toUpperCase() !== 'HQ');
+            if (firstActive) return String(firstActive.team_id);
+            const first = teamsCache[0];
+            return first ? String(first.team_id) : '';
+        }
+
+        function getSelectedTeam() {
+            return teamsCache.find(t => String(t.team_id) === String(selectedTeamId)) || null;
+        }
+
+        function isSystemTeam(team) {
+            if (!team) return false;
+            const id = String(team.team_id || '').toUpperCase();
+            return Boolean(team.is_system) || id === 'HQ';
+        }
+
+        function getTeamAccounts(teamId) {
+            return accountsCache.filter(a => String(a.team_id || '') === String(teamId));
+        }
+
+        function normalizeTeamName(team) {
+            if (!team) return '';
+            return String(team.team_name || team.team_id || '').trim();
+        }
+
+        function getRoleBadgeClass(role) {
+            if (role === 'TEAM_ADMIN') return 'badge badge-role-teamadmin';
+            if (role === 'ADMIN') return 'badge badge-role-admin';
+            return 'badge badge-role-member';
+        }
+
+        function getStatusBadgeHtml({ active, system = false }) {
+            if (system) return '<span class="badge badge-system">시스템</span>';
+            return active === false
+                ? '<span class="badge badge-muted">비활성</span>'
+                : '<span class="badge badge-success">활성</span>';
+        }
+
+        function renderSummaryCards() {
+            const activeTeams = teamsCache.filter(t => t.active !== false && !isSystemTeam(t)).length;
+            const allTeams = teamsCache.filter(t => !isSystemTeam(t)).length;
+            const allAccounts = accountsCache.length;
+            const teamAdmins = accountsCache.filter(a => a.role === 'TEAM_ADMIN' && a.active !== false).length;
+            const teamMembers = accountsCache.filter(a => a.role === 'TEAM_MEMBER' && a.active !== false).length;
+
+            document.getElementById('summaryActiveTeams').textContent = String(activeTeams);
+            document.getElementById('summaryAllTeams').textContent = String(allTeams);
+            document.getElementById('summaryAllAccounts').textContent = String(allAccounts);
+            document.getElementById('summaryRoleCounts').textContent = `${teamAdmins} / ${teamMembers}`;
+        }
+
+        function getFilteredTeams() {
+            const q = state.teamSearchQuery.trim().toLowerCase();
+            const status = state.teamStatusFilter;
+            return teamsCache.filter(team => {
+                const isActive = team.active !== false;
+                if (status === 'ACTIVE' && !isActive) return false;
+                if (status === 'INACTIVE' && isActive) return false;
+                if (!q) return true;
+                const id = String(team.team_id || '').toLowerCase();
+                const name = String(team.team_name || '').toLowerCase();
+                return id.includes(q) || name.includes(q);
+            }).sort((a, b) => {
+                const aSystem = isSystemTeam(a) ? 1 : 0;
+                const bSystem = isSystemTeam(b) ? 1 : 0;
+                if (aSystem !== bSystem) return aSystem - bSystem;
+                const aActive = a.active !== false ? 1 : 0;
+                const bActive = b.active !== false ? 1 : 0;
+                if (aActive !== bActive) return bActive - aActive;
+                return String(a.team_id).localeCompare(String(b.team_id));
+            });
+        }
+
+        function renderTeamList() {
+            const rows = getFilteredTeams();
+            const listEl = document.getElementById('teamList');
+            document.getElementById('teamListCount').textContent = `표시 ${rows.length}개`;
+
+            if (!rows.length) {
+                listEl.innerHTML = `
+                    <div class="empty-state" style="padding:18px;">
+                        <h3 style="font-size:15px;">표시할 팀이 없습니다</h3>
+                        <p>검색/필터 조건을 바꾸거나 새 팀을 생성하세요.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            listEl.innerHTML = rows.map(team => {
+                const teamId = String(team.team_id || '');
+                const teamName = normalizeTeamName(team);
+                const teamAccounts = getTeamAccounts(teamId);
+                const activeCount = teamAccounts.filter(a => a.active !== false).length;
+                const system = isSystemTeam(team);
                 return `
-                    <tr>
-                        <td>${teamId}</td>
-                        <td>
-                            ${isSystem
-                                ? teamName
-                                : `<div class="inline-edit">
-                                    <input type="text" value="${escapeHtml(teamName)}" data-team-name-input="${teamId}">
-                                    <button class="btn sm" data-save-team="${teamId}">저장</button>
-                                   </div>`}
-                        </td>
-                        <td>${isActive ? '활성' : '비활성'}</td>
-                        <td>
-                            ${isSystem
-                                ? '<span class="muted">시스템 팀</span>'
-                                : (isActive
-                                    ? `<div class="row-actions">
-                                        <button class="btn sm" data-deactivate-team="${teamId}">비활성화</button>
-                                        <button class="btn sm danger" data-delete-team="${teamId}">삭제</button>
-                                      </div>`
-                                    : '<span class="muted">비활성</span>')}
-                        </td>
-                    </tr>
+                    <button type="button" class="team-item ${teamId === selectedTeamId ? 'is-selected' : ''}" data-select-team="${escapeHtml(teamId)}">
+                        <div class="team-item-top">
+                            <div>
+                                <div class="team-name">${escapeHtml(teamName)}</div>
+                                <div class="team-id">${escapeHtml(teamId)}</div>
+                            </div>
+                            ${getStatusBadgeHtml({ active: team.active, system })}
+                        </div>
+                        <div class="team-meta">
+                            <span>계정 ${teamAccounts.length}개</span>
+                            <span>활성 ${activeCount}개</span>
+                        </div>
+                    </button>
                 `;
             }).join('');
 
-            document.querySelectorAll('[data-save-team]').forEach(btn => {
-                btn.addEventListener('click', () => onUpdateTeam(btn.dataset.saveTeam));
-            });
-            document.querySelectorAll('[data-deactivate-team]').forEach(btn => {
-                btn.addEventListener('click', () => onDeactivateTeam(btn.dataset.deactivateTeam));
-            });
-            document.querySelectorAll('[data-delete-team]').forEach(btn => {
-                btn.addEventListener('click', () => onDeleteTeam(btn.dataset.deleteTeam));
+            listEl.querySelectorAll('[data-select-team]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    selectedTeamId = btn.dataset.selectTeam;
+                    renderTeamList();
+                    renderTeamDetailWorkspace();
+                });
             });
         }
 
-        async function refreshTeamSelect() {
-            if (!teamsCache.length) {
-                teamsCache = await window.BTIAuth.listTeams({ includeInactive: true });
-            }
-            const select = document.getElementById('teamSelect');
-            const eligible = teamsCache.filter(t => t.active !== false && String(t.team_id || '').toUpperCase() !== 'HQ');
-            select.innerHTML = '';
-            if (eligible.length === 0) {
-                const opt = document.createElement('option');
-                opt.value = '';
-                opt.textContent = '생성 가능한 활성 팀이 없습니다';
-                select.appendChild(opt);
-                select.disabled = true;
-                document.getElementById('createAccountBtn').disabled = true;
-                document.getElementById('accountFormHint').textContent = '먼저 팀 관리에서 팀을 생성하세요.';
+        function renderTeamDetailWorkspace() {
+            const team = getSelectedTeam();
+            const emptyEl = document.getElementById('teamDetailEmpty');
+            const contentEl = document.getElementById('teamDetailContent');
+            const headerTitle = document.getElementById('detailHeaderTitle');
+            const headerHint = document.getElementById('detailHeaderHint');
+
+            if (!team) {
+                headerTitle.textContent = '팀 상세';
+                headerHint.textContent = '좌측에서 팀을 선택하세요.';
+                emptyEl.style.display = '';
+                contentEl.style.display = 'none';
                 return;
             }
-            select.disabled = false;
-            document.getElementById('createAccountBtn').disabled = false;
-            document.getElementById('accountFormHint').textContent = '관리자 탭에서는 일반 계정만 생성할 수 있습니다.';
-            eligible.forEach(t => {
-                const opt = document.createElement('option');
-                opt.value = t.team_id;
-                opt.textContent = `${t.team_name || t.team_id} (${t.team_id})`;
-                select.appendChild(opt);
-            });
+
+            emptyEl.style.display = 'none';
+            contentEl.style.display = '';
+            headerTitle.textContent = `${normalizeTeamName(team)} (${team.team_id})`;
+            headerHint.textContent = '선택한 팀 기준으로 계정/권한을 관리합니다.';
+
+            renderSelectedTeamInfo();
+            renderSelectedTeamAccountForm();
+            renderSelectedTeamAccounts();
+            renderDangerZone();
         }
 
-        async function renderAccounts() {
-            const rows = await window.BTIAuth.listAccounts();
-            document.getElementById('accountCount').textContent = `총 ${rows.length}개 계정`;
-            document.getElementById('accountsTbody').innerHTML = rows.map(a => `
+        function renderSelectedTeamInfo() {
+            const team = getSelectedTeam();
+            if (!team) return;
+            const teamId = String(team.team_id || '');
+            const system = isSystemTeam(team);
+            const isActive = team.active !== false;
+            const teamAccounts = getTeamAccounts(teamId);
+            const activeAccounts = teamAccounts.filter(a => a.active !== false);
+            const teamAdmins = activeAccounts.filter(a => a.role === 'TEAM_ADMIN').length;
+            const teamMembers = activeAccounts.filter(a => a.role === 'TEAM_MEMBER').length;
+
+            document.getElementById('selectedTeamIdInput').value = teamId;
+            document.getElementById('selectedTeamNameInput').value = normalizeTeamName(team);
+            document.getElementById('selectedTeamNameInput').disabled = system;
+            document.getElementById('saveTeamNameBtn').disabled = system;
+            document.getElementById('selectedTeamStatusBadge').outerHTML = getStatusBadgeHtml({ active: team.active, system }).replace('<span ', '<span id="selectedTeamStatusBadge" ');
+
+            document.getElementById('selectedTeamAccountCount').textContent = `${teamAccounts.length}개`;
+            document.getElementById('selectedTeamActiveAccountCount').textContent = `${activeAccounts.length}개`;
+            document.getElementById('selectedTeamAdminCount').textContent = `${teamAdmins}개`;
+            document.getElementById('selectedTeamMemberCount').textContent = `${teamMembers}개`;
+
+            const bannerRoot = document.getElementById('selectedTeamBanner');
+            if (system) {
+                bannerRoot.innerHTML = '<div class="status-banner">시스템 팀(HQ)은 이름 수정, 비활성화, 삭제 및 일반 계정 생성 대상이 아닙니다.</div>';
+            } else if (!isActive) {
+                bannerRoot.innerHTML = '<div class="status-banner warn">이 팀은 비활성 상태입니다. 계정 생성이 제한됩니다.</div>';
+            } else {
+                bannerRoot.innerHTML = '';
+            }
+
+            document.getElementById('selectedTeamSystemHint').textContent = system
+                ? '시스템 팀은 변경할 수 없습니다.'
+                : '팀명만 수정할 수 있습니다. 팀 ID는 변경할 수 없습니다.';
+        }
+
+        function renderSelectedTeamAccountForm() {
+            const team = getSelectedTeam();
+            const btn = document.getElementById('createAccountBtn');
+            const hint = document.getElementById('accountFormTeamHint');
+            const system = isSystemTeam(team);
+            const inactive = team && team.active === false;
+            const disabled = !team || system || inactive;
+
+            btn.disabled = disabled;
+            ['loginId', 'password', 'name', 'role'].forEach(id => {
+                const el = document.getElementById(id);
+                el.disabled = disabled;
+            });
+
+            if (!team) {
+                hint.textContent = '팀을 선택하면 해당 팀에 일반 계정을 생성할 수 있습니다.';
+                return;
+            }
+            if (system) {
+                hint.textContent = '시스템 팀(HQ)에는 일반 계정을 생성할 수 없습니다.';
+                return;
+            }
+            if (inactive) {
+                hint.textContent = '비활성 팀에는 계정을 생성할 수 없습니다.';
+                return;
+            }
+            hint.textContent = `${normalizeTeamName(team)} (${team.team_id}) 팀에 일반 계정을 생성합니다.`;
+        }
+
+        function getFilteredSelectedAccounts() {
+            const team = getSelectedTeam();
+            if (!team) return [];
+            const q = state.accountSearchQuery.trim().toLowerCase();
+            const roleFilter = state.accountRoleFilter;
+            const statusFilter = state.accountStatusFilter;
+            return getTeamAccounts(team.team_id).filter(a => {
+                if (a.role === 'ADMIN') return false;
+                if (roleFilter !== 'ALL' && String(a.role) !== roleFilter) return false;
+                const active = a.active !== false;
+                if (statusFilter === 'ACTIVE' && !active) return false;
+                if (statusFilter === 'INACTIVE' && active) return false;
+                if (!q) return true;
+                return String(a.login_id || '').toLowerCase().includes(q) || String(a.name || '').toLowerCase().includes(q);
+            }).sort((a, b) => String(a.login_id).localeCompare(String(b.login_id)));
+        }
+
+        function renderSelectedTeamAccounts() {
+            const rows = getFilteredSelectedAccounts();
+            const tbody = document.getElementById('accountsTbody');
+            document.getElementById('selectedAccountsCount').textContent = `총 ${rows.length}개 계정`;
+
+            if (!rows.length) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="muted" style="padding:14px; text-align:center;">표시할 계정이 없습니다.</td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = rows.map(a => `
                 <tr>
-                    <td>${a.login_id}</td>
-                    <td>${a.name}</td>
-                    <td>${a.team_name || a.team_id}</td>
-                    <td>${a.role}</td>
-                    <td>${a.active === false ? '비활성' : '활성'}</td>
+                    <td>${escapeHtml(a.login_id)}</td>
+                    <td>${escapeHtml(a.name)}</td>
+                    <td><span class="${getRoleBadgeClass(a.role)}">${escapeHtml(a.role)}</span></td>
+                    <td>${a.active === false ? '<span class="badge badge-muted">비활성</span>' : '<span class="badge badge-success">활성</span>'}</td>
                     <td>
-                        ${a.role === 'ADMIN'
-                            ? '<span class="muted">기본 관리자 계정</span>'
-                            : `<div class="row-actions">
-                                <button class="btn sm" data-reset="${a.account_id}">비밀번호 초기화</button>
-                                <button class="btn sm danger" data-delete="${a.account_id}">삭제</button>
-                              </div>`}
+                        <div class="row-actions">
+                            <button class="btn sm" data-reset-account="${escapeHtml(a.account_id)}">비밀번호 초기화</button>
+                            <button class="btn sm danger" data-delete-account="${escapeHtml(a.account_id)}">삭제</button>
+                        </div>
                     </td>
                 </tr>
             `).join('');
 
-            document.querySelectorAll('[data-reset]').forEach(btn => {
-                btn.addEventListener('click', () => onResetPassword(btn.dataset.reset));
+            tbody.querySelectorAll('[data-reset-account]').forEach(btn => {
+                btn.addEventListener('click', () => onResetPassword(btn.dataset.resetAccount));
             });
-            document.querySelectorAll('[data-delete]').forEach(btn => {
-                btn.addEventListener('click', () => onDeleteAccount(btn.dataset.delete));
+            tbody.querySelectorAll('[data-delete-account]').forEach(btn => {
+                btn.addEventListener('click', () => onDeleteAccount(btn.dataset.deleteAccount));
             });
         }
 
-        async function onCreateAccount() {
+        function renderDangerZone() {
+            const team = getSelectedTeam();
+            const deactivateBtn = document.getElementById('deactivateTeamBtn');
+            const deleteBtn = document.getElementById('deleteTeamBtn');
+            const hint = document.getElementById('dangerZoneHint');
+
+            if (!team) {
+                deactivateBtn.disabled = true;
+                deleteBtn.disabled = true;
+                hint.textContent = '팀을 선택하면 위험 작업을 사용할 수 있습니다.';
+                return;
+            }
+
+            const system = isSystemTeam(team);
+            if (system) {
+                deactivateBtn.disabled = true;
+                deleteBtn.disabled = true;
+                hint.textContent = '시스템 팀(HQ)은 비활성화/삭제할 수 없습니다.';
+                return;
+            }
+
+            deactivateBtn.disabled = team.active === false;
+            deleteBtn.disabled = false;
+            hint.textContent = team.active === false
+                ? '비활성 팀은 삭제만 가능합니다.'
+                : '비활성화는 활성 계정이 없을 때만 가능합니다.';
+        }
+
+        async function onCreateAccountForSelectedTeam() {
+            const team = getSelectedTeam();
+            if (!team) {
+                showToast('팀을 먼저 선택하세요.');
+                return;
+            }
+            if (isSystemTeam(team)) {
+                showToast('시스템 팀(HQ)에는 일반 계정을 생성할 수 없습니다.');
+                return;
+            }
+            if (team.active === false) {
+                showToast('비활성 팀에는 계정을 생성할 수 없습니다.');
+                return;
+            }
             try {
-                const selectedTeam = teamsCache.find(t => String(t.team_id) === String(document.getElementById('teamSelect').value));
-                if (!selectedTeam) throw new Error('선택 가능한 팀이 없습니다. 팀을 먼저 생성해주세요.');
                 await window.BTIAuth.createAccount({
                     login_id: document.getElementById('loginId').value,
                     password: document.getElementById('password').value,
                     name: document.getElementById('name').value,
-                    team_id: selectedTeam.team_id,
-                    team_name: selectedTeam.team_name,
+                    team_id: team.team_id,
+                    team_name: team.team_name,
                     role: document.getElementById('role').value,
                     active: true
                 });
-                ['loginId','password','name'].forEach(id => document.getElementById(id).value = '');
-                await renderAccounts();
+                ['loginId', 'password', 'name'].forEach(id => document.getElementById(id).value = '');
+                await reloadAdminData({ preserveSelection: true });
                 showToast('계정이 생성되었습니다.');
             } catch (err) {
                 showToast(err.message || '계정 생성에 실패했습니다.');
             }
         }
 
-        async function onCreateTeam() {
-            try {
-                await window.BTIAuth.createTeam({
-                    team_id: document.getElementById('newTeamId').value,
-                    team_name: document.getElementById('newTeamName').value
-                });
-                ['newTeamId', 'newTeamName'].forEach(id => document.getElementById(id).value = '');
-                await renderTeams();
-                await refreshTeamSelect();
-                showToast('팀이 생성되었습니다.');
-            } catch (err) {
-                showToast(err.message || '팀 생성에 실패했습니다.');
+        async function onSaveSelectedTeamName() {
+            const team = getSelectedTeam();
+            if (!team) return;
+            if (isSystemTeam(team)) {
+                showToast('시스템 팀은 수정할 수 없습니다.');
+                return;
             }
-        }
-
-        async function onUpdateTeam(teamId) {
+            const nextName = document.getElementById('selectedTeamNameInput').value;
             try {
-                const input = document.querySelector(`[data-team-name-input="${CSS.escape(teamId)}"]`);
-                if (!input) throw new Error('팀 입력 필드를 찾을 수 없습니다.');
-                await window.BTIAuth.updateTeam(teamId, { team_name: input.value });
-                await renderTeams();
-                await refreshTeamSelect();
+                await window.BTIAuth.updateTeam(team.team_id, { team_name: nextName });
+                await reloadAdminData({ preserveSelection: true });
                 showToast('팀명이 수정되었습니다.');
             } catch (err) {
                 showToast(err.message || '팀 수정에 실패했습니다.');
             }
         }
 
-        async function onDeactivateTeam(teamId) {
+        async function onDeactivateSelectedTeam() {
+            const team = getSelectedTeam();
+            if (!team) return;
+            if (isSystemTeam(team)) {
+                showToast('시스템 팀은 비활성화할 수 없습니다.');
+                return;
+            }
+            const ok = confirm(`${normalizeTeamName(team)} (${team.team_id}) 팀을 비활성화하시겠습니까?`);
+            if (!ok) return;
             try {
-                const target = teamsCache.find(t => String(t.team_id) === String(teamId));
-                const ok = confirm(`${target?.team_name || teamId} (${teamId}) 팀을 비활성화하시겠습니까?`);
-                if (!ok) return;
-                await window.BTIAuth.deactivateTeam(teamId);
-                await renderTeams();
-                await refreshTeamSelect();
+                await window.BTIAuth.deactivateTeam(team.team_id);
+                await reloadAdminData({ preserveSelection: true });
                 showToast('팀이 비활성화되었습니다.');
             } catch (err) {
                 showToast(err.message || '팀 비활성화에 실패했습니다.');
             }
         }
 
-        async function onDeleteTeam(teamId) {
+        async function onDeleteSelectedTeam() {
+            const team = getSelectedTeam();
+            if (!team) return;
+            if (isSystemTeam(team)) {
+                showToast('시스템 팀은 삭제할 수 없습니다.');
+                return;
+            }
             try {
-                const target = teamsCache.find(t => String(t.team_id) === String(teamId));
-                const targetAccounts = (await window.BTIAuth.listAccounts()).filter(a => String(a.team_id) === String(teamId));
-                const ok = confirm(`${target?.team_name || teamId} (${teamId}) 팀을 삭제하시겠습니까?\n해당 팀 계정 ${targetAccounts.length}개가 함께 삭제됩니다.`);
+                const targetAccounts = getTeamAccounts(team.team_id);
+                const ok = confirm(`${normalizeTeamName(team)} (${team.team_id}) 팀을 삭제하시겠습니까?\n해당 팀 계정 ${targetAccounts.length}개가 함께 삭제됩니다.`);
                 if (!ok) return;
-                const result = await window.BTIAuth.deleteTeam(teamId);
-                await renderTeams();
-                await refreshTeamSelect();
-                await renderAccounts();
-                const count = Number(result?.deletedAccountCount ?? targetAccounts.length ?? 0);
-                showToast(`팀이 삭제되었습니다. (계정 ${count}개 삭제)`);
+                const result = await window.BTIAuth.deleteTeam(team.team_id);
+                const deletedCount = Number(result?.deletedAccountCount ?? targetAccounts.length ?? 0);
+                selectedTeamId = '';
+                await reloadAdminData({ preserveSelection: false });
+                showToast(`팀이 삭제되었습니다. (계정 ${deletedCount}개 삭제)`);
             } catch (err) {
                 showToast(err.message || '팀 삭제에 실패했습니다.');
             }
@@ -333,7 +1149,7 @@
 
         async function onResetPassword(accountId) {
             try {
-                const target = (await window.BTIAuth.listAccounts()).find(a => a.account_id === accountId);
+                const target = accountsCache.find(a => a.account_id === accountId);
                 if (!target) throw new Error('계정을 찾을 수 없습니다.');
                 const ok = confirm(`${target.login_id} 계정의 비밀번호를 초기화하시겠습니까?\n초기화 비밀번호: ${window.BTIAuth.DEFAULT_RESET_PASSWORD}`);
                 if (!ok) return;
@@ -346,15 +1162,48 @@
 
         async function onDeleteAccount(accountId) {
             try {
-                const target = (await window.BTIAuth.listAccounts()).find(a => a.account_id === accountId);
+                const target = accountsCache.find(a => a.account_id === accountId);
                 if (!target) throw new Error('계정을 찾을 수 없습니다.');
                 const ok = confirm(`${target.login_id} 계정을 삭제하시겠습니까?`);
                 if (!ok) return;
                 await window.BTIAuth.deleteAccount(accountId);
-                await renderAccounts();
+                await reloadAdminData({ preserveSelection: true });
                 showToast('계정이 삭제되었습니다.');
             } catch (err) {
                 showToast(err.message || '계정 삭제에 실패했습니다.');
+            }
+        }
+
+        function openCreateTeamModal() {
+            const modal = document.getElementById('createTeamModalBackdrop');
+            modal.classList.add('show');
+            modal.setAttribute('aria-hidden', 'false');
+            setTimeout(() => document.getElementById('newTeamId').focus(), 0);
+        }
+
+        function closeCreateTeamModal() {
+            const modal = document.getElementById('createTeamModalBackdrop');
+            modal.classList.remove('show');
+            modal.setAttribute('aria-hidden', 'true');
+            document.getElementById('newTeamId').value = '';
+            document.getElementById('newTeamName').value = '';
+        }
+
+        async function onCreateTeam() {
+            try {
+                const teamId = document.getElementById('newTeamId').value;
+                const teamName = document.getElementById('newTeamName').value;
+                const created = await window.BTIAuth.createTeam({ team_id: teamId, team_name: teamName });
+                closeCreateTeamModal();
+                const createdTeamId = String(created?.team?.team_id || teamId || '').trim();
+                selectedTeamId = createdTeamId || selectedTeamId;
+                await reloadAdminData({ preserveSelection: true });
+                if (createdTeamId) selectedTeamId = createdTeamId;
+                renderTeamList();
+                renderTeamDetailWorkspace();
+                showToast('팀이 생성되었습니다.');
+            } catch (err) {
+                showToast(err.message || '팀 생성에 실패했습니다.');
             }
         }
 
@@ -362,7 +1211,8 @@
             const el = document.getElementById('toast');
             el.textContent = message;
             el.classList.add('show');
-            setTimeout(() => el.classList.remove('show'), 2200);
+            clearTimeout(showToast._timer);
+            showToast._timer = setTimeout(() => el.classList.remove('show'), 2400);
         }
 
         function escapeHtml(value) {

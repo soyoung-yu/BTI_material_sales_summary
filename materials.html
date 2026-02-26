@@ -139,6 +139,34 @@
             align-items: center;
         }
 
+        .inner-tabs {
+            display: flex;
+            gap: 8px;
+            padding: 12px 24px 0;
+            border-bottom: 1px solid #e2e8f0;
+            background: #fff;
+        }
+
+        .inner-tab {
+            border: none;
+            background: transparent;
+            padding: 10px 12px;
+            cursor: pointer;
+            color: #64748b;
+            font-size: 14px;
+            font-weight: 500;
+            border-bottom: 2px solid transparent;
+        }
+
+        .inner-tab.active {
+            color: #1a365d;
+            border-bottom-color: #3182ce;
+        }
+
+        .tab-panel.hidden {
+            display: none;
+        }
+
         .search-box {
             position: relative;
         }
@@ -290,6 +318,34 @@
         .status-discontinued {
             background: #fee2e2;
             color: #dc2626;
+        }
+
+        .request-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .request-badge.pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .request-badge.approved {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .request-badge.rejected {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+        .request-type {
+            font-weight: 600;
+            color: #334155;
         }
 
         .researcher {
@@ -535,6 +591,14 @@
                 <p class="page-desc">팀에서 개발한 소재 목록을 관리합니다.</p>
             </div>
             <div class="btn-group">
+                <button class="btn btn-secondary" onclick="downloadTeamMaterialsExcel()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    팀별 소재목록 다운로드
+                </button>
                 <button class="btn btn-secondary" onclick="openBulkUploadModal()">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -570,28 +634,54 @@
                 </div>
             </div>
 
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>소재코드</th>
-                            <th>소재명</th>
-                            <th>등록상태</th>
-                            <th>담당자</th>
-                            <th>등록일</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody id="materialTableBody">
-                    </tbody>
-                </table>
+            <div class="inner-tabs">
+                <button class="inner-tab active" id="materialsListTabBtn" onclick="setMaterialsViewTab('materials')">소재 목록</button>
+                <button class="inner-tab" id="myRequestsTabBtn" onclick="setMaterialsViewTab('requests')">내 요청 내역</button>
             </div>
 
-            <div class="pagination">
-                <div class="pagination-info" id="paginationInfo">
-                    0-0 / 0개
+            <div class="tab-panel" id="materialsListPanel">
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>소재코드</th>
+                                <th>소재명</th>
+                                <th>등록상태</th>
+                                <th>담당자</th>
+                                <th>등록일</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="materialTableBody">
+                        </tbody>
+                    </table>
                 </div>
-                <div class="pagination-controls" id="paginationControls">
+
+                <div class="pagination">
+                    <div class="pagination-info" id="paginationInfo">
+                        0-0 / 0개
+                    </div>
+                    <div class="pagination-controls" id="paginationControls">
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-panel hidden" id="myRequestsPanel">
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>요청일시</th>
+                                <th>요청유형</th>
+                                <th>소재코드</th>
+                                <th>소재명</th>
+                                <th>요청상태</th>
+                                <th>처리일시</th>
+                                <th>처리자</th>
+                            </tr>
+                        </thead>
+                        <tbody id="myRequestsTableBody"></tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -711,17 +801,19 @@
 
     <script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="api-config.js"></script>
-    <script src="api-client.js"></script>
+    <script src="api-client.js?v=20260225b"></script>
     <script src="data.js"></script>
-    <script src="auth.js"></script>
-    <script src="materials-store.js"></script>
+    <script src="auth.js?v=20260225a"></script>
+    <script src="materials-store.js?v=20260225b"></script>
     <script>
         // State
         let materials = [];
         let currentPage = 1;
         const pageSize = 10;
         let filteredMaterials = [];
+        let myRequests = [];
         let currentUser = null;
+        let currentMaterialsViewTab = 'materials';
 
         // DOM Elements
         const searchInput = document.getElementById('searchInput');
@@ -730,6 +822,7 @@
         const materialsCardTitle = document.getElementById('materialsCardTitle');
         const paginationInfo = document.getElementById('paginationInfo');
         const paginationControls = document.getElementById('paginationControls');
+        const myRequestsTableBody = document.getElementById('myRequestsTableBody');
 
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
@@ -781,6 +874,7 @@
             } else {
                 materials = seedRows;
             }
+            await refreshMyRequests();
             filterAndRender();
         }
 
@@ -790,6 +884,7 @@
                 return;
             }
             materials = window.BTIMaterialsStore ? window.BTIMaterialsStore.getAll() : materials;
+            await refreshMyRequests();
             filterAndRender();
         }
 
@@ -808,6 +903,28 @@
                 filterAndRender();
             });
 
+        }
+
+        async function refreshMyRequests() {
+            try {
+                if (!currentUser || !window.BTIMaterialsStore?.getMyRequests) {
+                    myRequests = [];
+                } else {
+                    myRequests = await window.BTIMaterialsStore.getMyRequests(currentUser);
+                }
+            } catch (error) {
+                console.error(error);
+                myRequests = [];
+            }
+            renderMyRequestsTable();
+        }
+
+        function setMaterialsViewTab(tab) {
+            currentMaterialsViewTab = tab === 'requests' ? 'requests' : 'materials';
+            document.getElementById('materialsListTabBtn').classList.toggle('active', currentMaterialsViewTab === 'materials');
+            document.getElementById('myRequestsTabBtn').classList.toggle('active', currentMaterialsViewTab === 'requests');
+            document.getElementById('materialsListPanel').classList.toggle('hidden', currentMaterialsViewTab !== 'materials');
+            document.getElementById('myRequestsPanel').classList.toggle('hidden', currentMaterialsViewTab !== 'requests');
         }
 
         function filterAndRender() {
@@ -899,12 +1016,55 @@
             paginationControls.innerHTML = buttons;
         }
 
+        function renderMyRequestsTable() {
+            if (!myRequestsTableBody) return;
+            if (!Array.isArray(myRequests) || myRequests.length === 0) {
+                myRequestsTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="empty-state">
+                            <div>내 요청 내역이 없습니다.</div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            myRequestsTableBody.innerHTML = myRequests.map((r) => {
+                const status = String(r.request_status || 'PENDING').toUpperCase();
+                const statusLabel = status === 'APPROVED' ? '완료' : (status === 'REJECTED' ? '반려' : '신청');
+                const statusClass = status === 'APPROVED' ? 'approved' : (status === 'REJECTED' ? 'rejected' : 'pending');
+                const requestType = String(r.request_type || '').toUpperCase();
+                const requestTypeLabel = requestType === 'DELETE' ? '삭제' : (requestType === 'UPDATE' ? '수정' : '등록');
+                const processedAt = status === 'APPROVED' ? r.approved_at : (status === 'REJECTED' ? r.rejected_at : '');
+                const processedBy = status === 'APPROVED' ? r.approved_by : (status === 'REJECTED' ? r.rejected_by : '');
+
+                return `
+                    <tr>
+                        <td>${formatDt(r.requested_at)}</td>
+                        <td><span class="request-type">${requestTypeLabel}</span></td>
+                        <td class="material-code">${r.raw_cd || ''}</td>
+                        <td class="material-name">${r.raw_nm || ''}</td>
+                        <td><span class="request-badge ${statusClass}">${statusLabel}</span></td>
+                        <td>${formatDt(processedAt)}</td>
+                        <td class="researcher">${processedBy || '-'}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
         function goToPage(page) {
             const totalPages = Math.ceil(filteredMaterials.length / pageSize);
             if (page < 1 || page > totalPages) return;
             currentPage = page;
             renderTable();
             renderPagination();
+        }
+
+        function formatDt(value) {
+            if (!value) return '-';
+            const d = new Date(value);
+            if (Number.isNaN(d.getTime())) return String(value);
+            return d.toLocaleString('ko-KR');
         }
 
         // Modal functions
@@ -954,24 +1114,28 @@
                 return;
             }
 
-            if (editIndex === -1) {
-                await window.BTIMaterialsStore?.createRequest({
-                    raw_cd: rawCd,
-                    raw_nm: rawNm,
-                    researcher
-                }, currentUser);
-                showToast('소재 추가 신청이 접수되었습니다. (관리자 승인 필요)');
-            } else {
-                await window.BTIMaterialsStore?.updateRequest(materials[editIndex]._id, {
-                    raw_cd: rawCd,
-                    raw_nm: rawNm,
-                    researcher
-                }, currentUser);
-                showToast('소재 수정 신청이 접수되었습니다. (관리자 승인 필요)');
-            }
+            try {
+                if (editIndex === -1) {
+                    await window.BTIMaterialsStore?.createRequest({
+                        raw_cd: rawCd,
+                        raw_nm: rawNm,
+                        researcher
+                    }, currentUser);
+                    showToast('소재 추가 신청이 접수되었습니다. (관리자 승인 필요)');
+                } else {
+                    await window.BTIMaterialsStore?.updateRequest(materials[editIndex]._id, {
+                        raw_cd: rawCd,
+                        raw_nm: rawNm,
+                        researcher
+                    }, currentUser);
+                    showToast('소재 수정 신청이 접수되었습니다. (관리자 승인 필요)');
+                }
 
-            closeModal();
-            await reloadMaterialsFromStore();
+                closeModal();
+                await reloadMaterialsFromStore();
+            } catch (error) {
+                notifyMaterialActionBlocked(error);
+            }
         }
 
         function openDeleteModal(index) {
@@ -1007,6 +1171,74 @@
 
         function closeBulkUploadModal() {
             document.getElementById('bulkUploadModal').classList.remove('active');
+        }
+
+        function formatTodayYYYYMMDD() {
+            const d = new Date();
+            const yyyy = d.getFullYear();
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const dd = String(d.getDate()).padStart(2, '0');
+            return `${yyyy}${mm}${dd}`;
+        }
+
+        function getMaterialsDownloadPrefix() {
+            if (!currentUser) return '소재목록';
+            if (currentUser.role === 'ADMIN') return '전체팀';
+            return currentUser.team_id || 'TEAM';
+        }
+
+        function sanitizeFileNamePart(value) {
+            return String(value || '')
+                .trim()
+                .replace(/[\\/:*?"<>|]/g, '_')
+                .replace(/\s+/g, '')
+                || 'UNKNOWN';
+        }
+
+        function normalizeMaterialsDownloadRows(rows) {
+            return (rows || []).map((m) => ({
+                team_id: String(m.team_id || (currentUser?.team_id || 'MB2')).trim(),
+                comp_id: String(m.comp_id || m.compid || '').trim(),
+                raw_cd: String(m.raw_cd || '').trim(),
+                raw_nm: String(m.raw_nm || '').trim(),
+                mmsta: String(m.mmsta || m.status || '').trim(),
+                raw_user_id: String(m.raw_user_id || m.researcher_id || '').trim(),
+                raw_user_nm: String(m.raw_user_nm || m.researcher || '').trim()
+            }));
+        }
+
+        function downloadTeamMaterialsExcel() {
+            if (!currentUser) {
+                showToast('로그인이 필요합니다.');
+                window.BTIAuth?.openLoginModal?.();
+                return;
+            }
+
+            const rows = normalizeMaterialsDownloadRows(materials);
+            if (!rows.length) {
+                showToast('다운로드할 소재 목록이 없습니다.');
+                return;
+            }
+
+            const headerOrder = ['team_id', 'comp_id', 'raw_cd', 'raw_nm', 'mmsta', 'raw_user_id', 'raw_user_nm'];
+            const ws = XLSX.utils.json_to_sheet(rows, { header: headerOrder });
+            XLSX.utils.sheet_add_aoa(ws, [headerOrder], { origin: 'A1' });
+
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'raw_list');
+
+            const scope = sanitizeFileNamePart(getMaterialsDownloadPrefix());
+            const filename = `BTI_팀별소재목록_${scope}_${formatTodayYYYYMMDD()}.xlsx`;
+
+            try {
+                XLSX.writeFile(wb, filename, { bookType: 'xlsx' });
+                showToast(`팀별 소재목록 다운로드를 시작했습니다. (${rows.length}건)`);
+            } catch (error) {
+                console.error(error);
+                const message = '소재목록 엑셀 다운로드에 실패했습니다.';
+                showToast(message);
+                window.alert(message);
+            }
         }
 
         async function submitBulkUpload() {
@@ -1079,30 +1311,56 @@
                 });
             }
 
-            if (mode === 'replace') {
-                for (const m of materials.filter(item => item.approval_status === '완료')) {
-                    await window.BTIMaterialsStore?.requestDelete(m._id, currentUser, m);
+            try {
+                if (mode === 'replace') {
+                    for (const m of materials.filter(item => item.approval_status === '완료')) {
+                        await window.BTIMaterialsStore?.requestDelete(m._id, currentUser, m);
+                    }
                 }
-            }
 
-            for (const m of newMaterials) {
-                await window.BTIMaterialsStore?.createRequest(m, currentUser);
+                for (const m of newMaterials) {
+                    await window.BTIMaterialsStore?.createRequest(m, currentUser);
+                }
+                closeBulkUploadModal();
+                await reloadMaterialsFromStore();
+                showToast(`엑셀 등록 요청 1건 접수 (총 ${newMaterials.length}건)`);
+            } catch (error) {
+                notifyMaterialActionBlocked(error);
             }
-            closeBulkUploadModal();
-            await reloadMaterialsFromStore();
-            showToast(`엑셀 등록 요청 1건 접수 (총 ${newMaterials.length}건)`);
         }
 
         async function confirmDelete() {
             if (!ensureMaterialActionAllowed()) return;
             const index = parseInt(document.getElementById('deleteIndex').value);
-            const result = await window.BTIMaterialsStore?.requestDelete(materials[index]._id, currentUser, materials[index]);
-            closeDeleteModal();
-            await reloadMaterialsFromStore();
-            if (result?.removedPending) {
-                showToast('요청이 삭제되었습니다.');
-            } else {
-                showToast('소재 삭제 신청이 접수되었습니다. (관리자 승인 필요)');
+            try {
+                const result = await window.BTIMaterialsStore?.requestDelete(materials[index]._id, currentUser, materials[index]);
+                closeDeleteModal();
+                await reloadMaterialsFromStore();
+                if (result?.removedPending) {
+                    showToast('요청이 삭제되었습니다.');
+                } else {
+                    showToast('소재 삭제 신청이 접수되었습니다. (관리자 승인 필요)');
+                }
+            } catch (error) {
+                notifyMaterialActionBlocked(error);
+            }
+        }
+
+        function getErrorMessage(error) {
+            if (!error) return '';
+            if (typeof error === 'string') return error;
+            if (typeof error.message === 'string' && error.message) return error.message;
+            if (typeof error.reason === 'string' && error.reason) return error.reason;
+            if (error.reason && typeof error.reason.message === 'string') return error.reason.message;
+            return '';
+        }
+
+        function notifyMaterialActionBlocked(error) {
+            const message = getErrorMessage(error) || '현재 소재 추가/수정/삭제 신청 기능은 점검 중입니다.';
+            showToast(message);
+            const toast = document.getElementById('toast');
+            if (!toast || !toast.classList.contains('show')) {
+                window.alert(message);
             }
         }
 
@@ -1113,15 +1371,38 @@
             setTimeout(() => toast.classList.remove('show'), 3000);
         }
 
-        // Close modal on overlay click
+        // Keep modal open on overlay click; close only via explicit buttons(X/취소)
         document.getElementById('modal').addEventListener('click', function(e) {
-            if (e.target === this) closeModal();
+            if (e.target === this) return;
         });
         document.getElementById('deleteModal').addEventListener('click', function(e) {
-            if (e.target === this) closeDeleteModal();
+            if (e.target === this) return;
         });
         document.getElementById('bulkUploadModal').addEventListener('click', function(e) {
-            if (e.target === this) closeBulkUploadModal();
+            if (e.target === this) return;
+        });
+
+        // Safety net: ensure API rejection messages are surfaced to users as toast popups.
+        window.addEventListener('unhandledrejection', function(e) {
+            const message = getErrorMessage(e.reason);
+            if (!message) return;
+            if (message.includes('현재 소재 추가/수정/삭제 신청 기능은 점검 중입니다.')) {
+                notifyMaterialActionBlocked(message);
+                e.preventDefault();
+            }
+        });
+
+        window.addEventListener('error', function(e) {
+            const message = getErrorMessage(e.error) || getErrorMessage(e.message);
+            if (!message) return;
+            if (message.includes('현재 소재 추가/수정/삭제 신청 기능은 점검 중입니다.')) {
+                notifyMaterialActionBlocked(message);
+                e.preventDefault();
+            }
+        });
+
+        window.addEventListener('bti:material-request-blocked', function(e) {
+            notifyMaterialActionBlocked(e?.detail?.message || '현재 소재 추가/수정/삭제 신청 기능은 점검 중입니다.');
         });
     </script>
 </body>

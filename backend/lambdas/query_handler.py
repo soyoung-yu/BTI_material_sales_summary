@@ -7,6 +7,7 @@ from datetime import datetime
 from typing import Any, Dict, List
 
 import boto3
+from botocore.exceptions import ClientError
 
 s3 = boto3.client('s3')
 
@@ -14,10 +15,12 @@ DATA_BUCKET = os.environ.get('BTI_DATA_BUCKET', '')
 REPORT_KEY = os.environ.get('BTI_REPORT_LATEST_KEY', 'report/latest.json')
 MATERIALS_KEY = os.environ.get('BTI_MATERIALS_LATEST_KEY', 'materials/latest.json')
 META_KEY = os.environ.get('BTI_META_LATEST_KEY', 'meta/latest.json')
+TEAM_REPORT_PREFIX = os.environ.get('BTI_TEAM_REPORT_PREFIX', 'report/teams')
 ALLOWED_ORIGIN = os.environ.get('ALLOWED_ORIGIN', '*')
 AUTH_SECRET = os.environ.get('BTI_AUTH_SECRET', 'dev-change-this-secret')
 LEGACY_DEFAULT_TEAM_ID = os.environ.get('BTI_LEGACY_DEFAULT_TEAM_ID', 'MB2')
 LEGACY_DEFAULT_TEAM_NAME = os.environ.get('BTI_LEGACY_DEFAULT_TEAM_NAME', 'MB2팀')
+DEFAULT_COMP_ID = str(os.environ.get('COMP_ID', '1200'))
 
 
 def _response(status: int, body: Dict[str, Any]) -> Dict[str, Any]:
@@ -40,6 +43,13 @@ def _load_json(key: str) -> Any:
     return json.loads(obj['Body'].read())
 
 
+def _is_missing_s3_key(exc: Exception) -> bool:
+    if isinstance(exc, ClientError):
+        err = (exc.response or {}).get('Error', {})
+        return str(err.get('Code') or '') in {'NoSuchKey', '404', 'NotFound'}
+    return 'NoSuchKey' in str(exc)
+
+
 def _as_rows(payload: Any) -> List[Dict[str, Any]]:
     if isinstance(payload, dict) and isinstance(payload.get('rows'), list):
         return payload['rows']
@@ -58,6 +68,10 @@ def _normalize_materials_rows(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]
         default_team_name = LEGACY_DEFAULT_TEAM_NAME if team_id == LEGACY_DEFAULT_TEAM_ID else f'{team_id}팀'
         item['team_id'] = team_id
         item['team_name'] = str(item.get('team_name') or default_team_name).strip() or default_team_name
+        item['comp_id'] = str(item.get('comp_id') or item.get('compid') or DEFAULT_COMP_ID).strip() or DEFAULT_COMP_ID
+        item['raw_user_id'] = str(item.get('raw_user_id') or item.get('researcher_id') or '').strip()
+        item['raw_user_nm'] = str(item.get('raw_user_nm') or item.get('researcher') or '').strip()
+        item['mmsta'] = str(item.get('mmsta') or item.get('status') or '').strip()
         normalized.append(item)
     return normalized
 
@@ -133,6 +147,10 @@ def _route(event: Dict[str, Any]) -> str:
     return raw_path.rstrip('/') or '/'
 
 
+def _team_report_latest_key(team_id: str) -> str:
+    return f"{TEAM_REPORT_PREFIX.rstrip('/')}/{team_id}/latest.json"
+
+
 def _b64url_decode(text: str) -> bytes:
     padded = text + '=' * (-len(text) % 4)
     return base64.urlsafe_b64decode(padded.encode('ascii'))
@@ -182,19 +200,42 @@ def lambda_handler(event: Dict[str, Any], _context: Any) -> Dict[str, Any]:
         query = event.get('queryStringParameters') or {}
 
         if path.endswith('/report-data') or path == '/report-data':
-            payload = _load_json(REPORT_KEY)
-            rows = _as_rows(payload)
-            date_filtered_rows = _filter_by_date(rows, query.get('startDate', ''), query.get('endDate', ''))
-            materials_payload = _load_json(MATERIALS_KEY)
-            material_rows = _as_rows(materials_payload)
-            raw_team_map = _build_raw_team_map(material_rows)
-            filtered_rows = _filter_report_rows_by_team(date_filtered_rows, claims, raw_team_map)
+            role = str(claims.get('role') or '')
+            source_key = REPORT_KEY
+            used_precomputed_team_file = False
+            if role == 'ADMIN':
+                payload = _load_json(REPORT_KEY)
+                rows = _as_rows(payload)
+                filtered_rows = _filter_by_date(rows, query.get('startDate', ''), query.get('endDate', ''))
+            else:
+                team_id = str(claims.get('team_id') or '').strip()
+                team_key = _team_report_latest_key(team_id)
+                try:
+                    payload = _load_json(team_key)
+                    rows = _as_rows(payload)
+                    filtered_rows = _filter_by_date(rows, query.get('startDate', ''), query.get('endDate', ''))
+                    source_key = team_key
+                    used_precomputed_team_file = True
+                except Exception as exc:
+                    if not _is_missing_s3_key(exc):
+                        raise
+                    payload = _load_json(REPORT_KEY)
+                    rows = _as_rows(payload)
+                    date_filtered_rows = _filter_by_date(rows, query.get('startDate', ''), query.get('endDate', ''))
+                    materials_payload = _load_json(MATERIALS_KEY)
+                    material_rows = _as_rows(materials_payload)
+                    raw_team_map = _build_raw_team_map(material_rows)
+                    filtered_rows = _filter_report_rows_by_team(date_filtered_rows, claims, raw_team_map)
+                    source_key = REPORT_KEY
+
             meta = payload.get('meta', {}) if isinstance(payload, dict) else {}
             meta = {
                 **meta,
                 'rowCount': len(filtered_rows),
-                'scopeTeamId': 'ALL' if str(claims.get('role') or '') == 'ADMIN' else str(claims.get('team_id') or ''),
-                'scopeTeamName': '전체팀' if str(claims.get('role') or '') == 'ADMIN' else str(claims.get('team_name') or ''),
+                'scopeTeamId': 'ALL' if role == 'ADMIN' else str(claims.get('team_id') or ''),
+                'scopeTeamName': '전체팀' if role == 'ADMIN' else str(claims.get('team_name') or ''),
+                'sourceKey': source_key,
+                'teamScopedPrecomputed': used_precomputed_team_file,
                 'servedAt': datetime.utcnow().isoformat(timespec='seconds') + 'Z'
             }
             return _response(200, {'rows': filtered_rows, 'meta': meta})

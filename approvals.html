@@ -29,6 +29,8 @@
         th{background:#f8fafc;color:#475569}
         .btn{border:1px solid #cbd5e1;background:#fff;color:#0f172a;padding:8px 10px;border-radius:8px;cursor:pointer}
         .btn.primary{background:#1a365d;border-color:#1a365d;color:#fff}
+        .btn.danger{background:#fee2e2;border-color:#fecaca;color:#b91c1c}
+        .action-group{display:flex;gap:6px}
         .empty{padding:32px 12px;text-align:center;color:#64748b}
         .toast{position:fixed;right:24px;bottom:24px;background:#1a365d;color:#fff;padding:12px 16px;border-radius:8px;opacity:0;transform:translateY(8px);transition:.2s}
         .toast.show{opacity:1;transform:translateY(0)}
@@ -73,9 +75,9 @@
     <div class="toast" id="toast"></div>
 
     <script src="api-config.js"></script>
-    <script src="api-client.js"></script>
-    <script src="auth.js"></script>
-    <script src="materials-store.js"></script>
+    <script src="api-client.js?v=20260225b"></script>
+    <script src="auth.js?v=20260225a"></script>
+    <script src="materials-store.js?v=20260225b"></script>
     <script>
         let currentUser = null;
 
@@ -102,19 +104,31 @@
 
             tbody.innerHTML = rows.map(r => `
                 <tr>
-                    <td><span class="badge pending">${r.request_status}</span></td>
+                    <td><span class="badge pending">${formatRequestStatus(r.request_status)}</span></td>
                     <td>${r.request_type}</td>
                     <td>${r.raw_cd || ''}</td>
                     <td>${r.raw_nm || ''}</td>
                     <td>${r.requested_by || '-'}</td>
                     <td>${r.requested_by_team_id || '-'}</td>
                     <td>${formatDt(r.requested_at)}</td>
-                    <td><button class="btn primary" data-id="${r._id || r.request_id}">승인</button></td>
+                    <td>
+                        <div class="action-group">
+                            <button class="btn primary" data-action="approve" data-id="${r._id || r.request_id}">승인</button>
+                            <button class="btn danger" data-action="reject" data-id="${r._id || r.request_id}">반려</button>
+                        </div>
+                    </td>
                 </tr>
             `).join('');
 
             tbody.querySelectorAll('button[data-id]').forEach(btn => {
-                btn.addEventListener('click', () => approve(btn.dataset.id));
+                btn.addEventListener('click', () => {
+                    const rowId = btn.dataset.id;
+                    if (btn.dataset.action === 'reject') {
+                        reject(rowId);
+                        return;
+                    }
+                    approve(rowId);
+                });
             });
         }
 
@@ -126,6 +140,23 @@
             } catch (err) {
                 showToast(err.message || '승인 처리에 실패했습니다.');
             }
+        }
+
+        async function reject(rowId) {
+            try {
+                await window.BTIMaterialsStore.rejectRequest(rowId, currentUser);
+                await renderPendingRows();
+                showToast('반려 처리되었습니다.');
+            } catch (err) {
+                showToast(err.message || '반려 처리에 실패했습니다.');
+            }
+        }
+
+        function formatRequestStatus(status) {
+            const s = String(status || '').toUpperCase();
+            if (s === 'APPROVED') return '완료';
+            if (s === 'REJECTED') return '반려';
+            return '신청';
         }
 
         function formatDt(v) {

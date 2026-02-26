@@ -27,7 +27,9 @@ class BatchConfig:
     comp_id: str
     customer_comp_id: str
     athena_database: str
+    material_source_mode: str
     material_list_s3_path: str
+    materials_latest_key: str
     start_date: str
     end_date: str
     include_net_sales: bool
@@ -66,15 +68,31 @@ def _resolve_date_range(event: Dict[str, Any]) -> Tuple[str, str]:
 
 def load_config(event: Dict[str, Any]) -> BatchConfig:
     start_date, end_date = _resolve_date_range(event)
-    material_path = event.get('materialListS3Path') or os.environ.get('MATERIAL_LIST_S3_PATH', '')
-    if not material_path:
+    source_mode = str(
+        event.get('materialSourceMode')
+        or os.environ.get('MATERIAL_SOURCE_MODE', 's3_materials_latest')
+    ).strip() or 's3_materials_latest'
+    material_path = str(event.get('materialListS3Path') or os.environ.get('MATERIAL_LIST_S3_PATH', '')).strip()
+    materials_latest_key = str(
+        event.get('materialsLatestKey') or os.environ.get('BTI_MATERIALS_LATEST_KEY', 'materials/latest.json')
+    ).strip() or 'materials/latest.json'
+
+    if source_mode in {'excel_legacy', 'excel_refresh_materials'} and not material_path:
         raise ValueError('MATERIAL_LIST_S3_PATH 환경변수 또는 event.materialListS3Path가 필요합니다.')
+    if source_mode not in {'excel_legacy', 'excel_refresh_materials'}:
+        data_bucket = str(os.environ.get('BTI_DATA_BUCKET', '')).strip()
+        if not data_bucket:
+            raise ValueError('BTI_DATA_BUCKET 환경변수가 설정되지 않았습니다.')
+        if not materials_latest_key:
+            raise ValueError('BTI_MATERIALS_LATEST_KEY 환경변수가 설정되지 않았습니다.')
 
     return BatchConfig(
         comp_id=str(event.get('compId') or os.environ.get('COMP_ID', '1200')),
         customer_comp_id=str(event.get('customerCompId') or os.environ.get('CUSTOMER_COMP_ID', os.environ.get('COMP_ID', '1200'))),
         athena_database=str(event.get('athenaDatabase') or os.environ.get('ATHENA_DATABASE', 'data_mart')),
+        material_source_mode=source_mode,
         material_list_s3_path=material_path,
+        materials_latest_key=materials_latest_key,
         start_date=start_date,
         end_date=end_date,
         include_net_sales=str(event.get('includeNetSales', os.environ.get('INCLUDE_NET_SALES', 'false'))).lower() == 'true',
@@ -102,15 +120,23 @@ def read_materials_excel(s3_path: str) -> pd.DataFrame:
     s3 = boto3.client('s3')
     obj = s3.get_object(Bucket=parsed.netloc, Key=parsed.path.lstrip('/'))
     df = pd.read_excel(BytesIO(obj['Body'].read()), engine='openpyxl')
-    if 'raw_cd' not in df.columns:
+    if 'raw_cd' not in df.columns or 'team_id' not in df.columns:
         # 운영 엑셀 컬럼명 대응 (원료코드/원료명 등)
         rename_map = {}
         for col in df.columns:
             key = str(col).strip().lower()
+            if key in {'team_id', 'team id', '팀id', '팀코드'}:
+                rename_map[col] = 'team_id'
+            elif key in {'comp_id', 'compid', 'comp id', '법인코드'}:
+                rename_map[col] = 'comp_id'
             if key in {'원료코드', 'raw_cd', 'raw code'} or key == '원료코드'.lower():
                 rename_map[col] = 'raw_cd'
             elif key in {'원료명', 'raw_nm', 'raw name'} or key == '원료명'.lower():
                 rename_map[col] = 'raw_nm'
+            elif key in {'raw_user_id', '담당자사번'}:
+                rename_map[col] = 'raw_user_id'
+            elif key in {'raw_user_nm', '담당자이름'}:
+                rename_map[col] = 'raw_user_nm'
             elif key in {'담당자이름', 'researcher'}:
                 rename_map[col] = 'researcher'
             elif key in {'상태', 'approval_status'}:
@@ -122,12 +148,32 @@ def read_materials_excel(s3_path: str) -> pd.DataFrame:
         if rename_map:
             df = df.rename(columns=rename_map)
 
-    if 'raw_cd' not in df.columns:
-        raise ValueError('소재 엑셀에 raw_cd(또는 원료코드) 컬럼이 필요합니다.')
+    required_cols = ['team_id', 'raw_cd', 'raw_nm']
+    missing = [c for c in required_cols if c not in df.columns]
+    if missing:
+        raise ValueError(f"소재 엑셀에 필수 컬럼이 필요합니다: {', '.join(missing)}")
 
-    df['raw_cd'] = df['raw_cd'].astype(str).str.strip()
-    if 'raw_nm' in df.columns:
-        df['raw_nm'] = df['raw_nm'].astype(str).str.strip()
+    for col in ['team_id', 'comp_id', 'raw_cd', 'raw_nm', 'mmsta', 'raw_user_id', 'raw_user_nm', 'researcher']:
+        if col not in df.columns:
+            df[col] = ''
+        df[col] = df[col].astype(str).str.strip()
+    return df
+
+
+def read_materials_latest_json(bucket: str, key: str) -> pd.DataFrame:
+    logger.info('Load materials master from s3://%s/%s', bucket, key)
+    s3 = boto3.client('s3')
+    obj = s3.get_object(Bucket=bucket, Key=key)
+    payload = json.loads(obj['Body'].read())
+    rows = payload.get('rows') if isinstance(payload, dict) else payload
+    if not isinstance(rows, list):
+        rows = []
+    df = pd.DataFrame([r for r in rows if isinstance(r, dict)])
+    if df.empty:
+        return pd.DataFrame(columns=[
+            'raw_cd', 'raw_nm', 'mmsta', 'researcher', 'created', 'approval_status',
+            'team_id', 'team_name', 'comp_id', 'raw_user_id', 'raw_user_nm'
+        ])
     return df
 
 
@@ -145,11 +191,43 @@ def prepare_materials_payload(materials_df: pd.DataFrame) -> pd.DataFrame:
         df['created'] = today
     if 'mmsta' not in df.columns:
         df['mmsta'] = ''
+    if 'comp_id' not in df.columns:
+        df['comp_id'] = str(os.environ.get('COMP_ID', '1200'))
+    if 'raw_user_id' not in df.columns:
+        df['raw_user_id'] = ''
+    if 'raw_user_nm' not in df.columns:
+        if 'researcher' in df.columns:
+            df['raw_user_nm'] = df['researcher']
+        else:
+            df['raw_user_nm'] = ''
+    if 'team_id' not in df.columns:
+        df['team_id'] = os.environ.get('BTI_LEGACY_DEFAULT_TEAM_ID', 'MB2')
+    if 'team_name' not in df.columns:
+        legacy_team_id = str(os.environ.get('BTI_LEGACY_DEFAULT_TEAM_ID', 'MB2')).strip() or 'MB2'
+        legacy_team_name = str(os.environ.get('BTI_LEGACY_DEFAULT_TEAM_NAME', f'{legacy_team_id}팀')).strip() or f'{legacy_team_id}팀'
+        df['team_name'] = legacy_team_name
 
-    cols = ['raw_cd', 'raw_nm', 'mmsta', 'researcher', 'created', 'approval_status']
+    cols = [
+        'raw_cd', 'raw_nm', 'mmsta', 'researcher', 'created', 'approval_status',
+        'team_id', 'team_name', 'comp_id', 'raw_user_id', 'raw_user_nm'
+    ]
     df = df[cols].copy()
     df = df.drop_duplicates(subset=['raw_cd']).sort_values(['raw_cd']).reset_index(drop=True)
     df['created'] = pd.to_datetime(df['created'], errors='coerce').dt.strftime('%Y-%m-%d').fillna(today)
+    df['team_id'] = df['team_id'].astype(str).str.strip().replace({'': os.environ.get('BTI_LEGACY_DEFAULT_TEAM_ID', 'MB2')})
+    df['team_name'] = df['team_name'].astype(str).str.strip()
+    df['comp_id'] = df['comp_id'].astype(str).str.strip().replace({'': str(os.environ.get('COMP_ID', '1200'))})
+    df['raw_user_id'] = df['raw_user_id'].astype(str).str.strip()
+    df['raw_user_nm'] = df['raw_user_nm'].astype(str).str.strip()
+    missing_raw_user_nm = df['raw_user_nm'].eq('')
+    if missing_raw_user_nm.any():
+        df.loc[missing_raw_user_nm, 'raw_user_nm'] = df.loc[missing_raw_user_nm, 'researcher'].astype(str).str.strip()
+    missing_researcher = df['researcher'].astype(str).str.strip().eq('')
+    if missing_researcher.any():
+        df.loc[missing_researcher, 'researcher'] = df.loc[missing_researcher, 'raw_user_nm']
+    missing_team_name = df['team_name'].eq('')
+    if missing_team_name.any():
+        df.loc[missing_team_name, 'team_name'] = df.loc[missing_team_name, 'team_id'].apply(lambda v: f'{v}팀' if str(v) != 'HQ' else '관리자')
     return df
 
 
@@ -301,7 +379,14 @@ def run_batch_pipeline(event: Dict[str, Any]) -> Tuple[List[Dict[str, Any]], Lis
     cfg = load_config(event)
     logger.info('Batch config: %s', cfg)
 
-    materials_src_df = read_materials_excel(cfg.material_list_s3_path)
+    source_mode = cfg.material_source_mode
+    uses_excel_refresh = source_mode in {'excel_legacy', 'excel_refresh_materials'}
+
+    if uses_excel_refresh:
+        materials_src_df = read_materials_excel(cfg.material_list_s3_path)
+    else:
+        data_bucket = str(os.environ.get('BTI_DATA_BUCKET', '')).strip()
+        materials_src_df = read_materials_latest_json(data_bucket, cfg.materials_latest_key)
     materials_payload_df = prepare_materials_payload(materials_src_df)
 
     bom_edges_df = fetch_bom_edges(cfg)
@@ -320,7 +405,11 @@ def run_batch_pipeline(event: Dict[str, Any]) -> Tuple[List[Dict[str, Any]], Lis
             'compId': cfg.comp_id,
             'customerCompId': cfg.customer_comp_id,
             'athenaDatabase': cfg.athena_database,
+            'materialSourceMode': cfg.material_source_mode,
+            'materialSourceModeEffective': 'excel_refresh_materials' if uses_excel_refresh else 's3_materials_latest',
+            'materialsRefreshedFromExcel': uses_excel_refresh,
             'materialListS3Path': cfg.material_list_s3_path,
+            'materialsLatestKey': cfg.materials_latest_key,
             'startDate': cfg.start_date,
             'endDate': cfg.end_date,
             'includeNetSales': cfg.include_net_sales,

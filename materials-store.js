@@ -33,6 +33,23 @@
         return row._id ? row : { ...row, _id: `mat-${Date.now()}-${Math.random().toString(36).slice(2, 8)}` };
     }
 
+    function normalizeApiRequestRow(r) {
+        return {
+            ...r,
+            _id: r.request_id,
+            raw_cd: r?.payload?.raw_cd || '',
+            raw_nm: r?.payload?.raw_nm || '',
+            requested_by: r.requested_by_name || '',
+            requested_by_account_id: r.requested_by_account_id || '',
+            requested_by_team_id: r.team_id || '',
+            requested_at: r.created_at || '',
+            approved_by: r.approved_by_name || '',
+            approved_at: r.approved_at || '',
+            rejected_by: r.rejected_by_name || '',
+            rejected_at: r.rejected_at || ''
+        };
+    }
+
     function seed(initialRows) {
         const existing = read();
         if (Array.isArray(existing) && existing.length > 0) return existing;
@@ -44,10 +61,13 @@
             request_type: row.request_type ?? 'NONE',
             request_status: row.request_status ?? (row.approval_status === '완료' ? 'APPROVED' : 'PENDING'),
             requested_by: row.requested_by ?? '',
+            requested_by_account_id: row.requested_by_account_id ?? '',
             requested_by_team_id: row.requested_by_team_id ?? '',
             requested_at: row.requested_at ?? '',
             approved_by: row.approved_by ?? '',
             approved_at: row.approved_at ?? '',
+            rejected_by: row.rejected_by ?? '',
+            rejected_at: row.rejected_at ?? '',
             ...normalizeTeamFields(row),
             ...row
         }));
@@ -97,11 +117,14 @@
             request_type: 'CREATE',
             request_status: 'PENDING',
             requested_by: user?.name || '',
+            requested_by_account_id: user?.account_id || user?.login_id || '',
             requested_by_team_id: user?.team_id || '',
             ...normalizeTeamFields(user || {}),
             requested_at: nowIso(),
             approved_by: '',
-            approved_at: ''
+            approved_at: '',
+            rejected_by: '',
+            rejected_at: ''
         }));
         write(rows);
         return rows;
@@ -132,9 +155,12 @@
             request_type: 'UPDATE',
             request_status: 'PENDING',
             requested_by: user?.name || '',
+            requested_by_account_id: user?.account_id || user?.login_id || '',
             requested_by_team_id: user?.team_id || '',
             ...normalizeTeamFields(user || {}),
-            requested_at: nowIso()
+            requested_at: nowIso(),
+            rejected_by: '',
+            rejected_at: ''
         };
         write(rows);
         return rows;
@@ -167,9 +193,12 @@
             request_type: 'DELETE',
             request_status: 'PENDING',
             requested_by: user?.name || '',
+            requested_by_account_id: user?.account_id || user?.login_id || '',
             requested_by_team_id: user?.team_id || '',
             ...normalizeTeamFields(row),
-            requested_at: nowIso()
+            requested_at: nowIso(),
+            rejected_by: '',
+            rejected_at: ''
         };
         write(rows);
         return { rows, removedPending: false };
@@ -181,15 +210,7 @@
             const rows = Array.isArray(result?.rows) ? result.rows : [];
             return rows
                 .filter(r => String(r?.request_status || '') === 'PENDING')
-                .map(r => ({
-                    ...r,
-                    _id: r.request_id,
-                    raw_cd: r?.payload?.raw_cd || '',
-                    raw_nm: r?.payload?.raw_nm || '',
-                    requested_by: r.requested_by_name || '',
-                    requested_by_team_id: r.team_id || '',
-                    requested_at: r.created_at || ''
-                }));
+                .map(normalizeApiRequestRow);
         }
         const rows = getAll().filter(r => r.request_status === 'PENDING');
         if (!user) return [];
@@ -198,6 +219,35 @@
             return rows.filter(r => String(r.requested_by_team_id || '') === String(user.team_id || ''));
         }
         return [];
+    }
+
+    async function getMyRequests(user) {
+        if (!user) return [];
+        if (useApi()) {
+            const result = await window.BTIApiClient.getMaterialRequests();
+            const rows = Array.isArray(result?.rows) ? result.rows : [];
+            return rows
+                .map(normalizeApiRequestRow)
+                .filter(r => {
+                    const requestedAccountId = String(r.requested_by_account_id || '').trim();
+                    if (requestedAccountId && user?.account_id) {
+                        return requestedAccountId === String(user.account_id);
+                    }
+                    // Legacy rows may not have requested_by_account_id; fallback to requester name + team.
+                    return String(r.requested_by || '') === String(user?.name || '') &&
+                        String(r.requested_by_team_id || '') === String(user?.team_id || '');
+                })
+                .sort((a, b) => String(b.requested_at || '').localeCompare(String(a.requested_at || '')));
+        }
+        return getAll()
+            .filter(r => String(r.request_type || 'NONE') !== 'NONE')
+            .filter(r => {
+                const accountId = String(r.requested_by_account_id || '').trim();
+                if (accountId && user?.account_id) return accountId === String(user.account_id);
+                return String(r.requested_by || '') === String(user?.name || '') &&
+                    String(r.requested_by_team_id || '') === String(user?.team_id || '');
+            })
+            .sort((a, b) => String(b.requested_at || '').localeCompare(String(a.requested_at || '')));
     }
 
     async function approveRequest(rowId, approver) {
@@ -229,6 +279,28 @@
         return rows;
     }
 
+    async function rejectRequest(rowId, approver) {
+        if (useApi()) {
+            return window.BTIApiClient.rejectMaterialRequest(rowId);
+        }
+        const rows = getAll();
+        const idx = rows.findIndex(r => r._id === rowId);
+        if (idx < 0) throw new Error('반려 대상 요청을 찾을 수 없습니다.');
+        const row = rows[idx];
+        if (row.request_status !== 'PENDING') throw new Error('이미 처리된 요청입니다.');
+        if (approver?.role === 'TEAM_ADMIN' && row.requested_by_team_id !== approver.team_id) {
+            throw new Error('본인 팀 요청만 반려할 수 있습니다.');
+        }
+        rows[idx] = {
+            ...row,
+            request_status: 'REJECTED',
+            rejected_by: approver?.name || '',
+            rejected_at: nowIso()
+        };
+        write(rows);
+        return rows;
+    }
+
     window.BTIMaterialsStore = {
         seed,
         getAll,
@@ -237,6 +309,8 @@
         updateRequest,
         requestDelete,
         getPendingRequests,
-        approveRequest
+        getMyRequests,
+        approveRequest,
+        rejectRequest
     };
 })();

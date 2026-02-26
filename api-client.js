@@ -68,6 +68,22 @@
 
         if (!response.ok) {
             const message = payload?.message || `API 요청 실패 (${response.status})`;
+            if (
+                path === '/materials/requests' &&
+                typeof message === 'string' &&
+                message.includes('현재 소재 추가/수정/삭제 신청 기능은 점검 중입니다.')
+            ) {
+                try {
+                    window.alert(message);
+                } catch (_e) {
+                    // no-op
+                }
+                try {
+                    window.dispatchEvent(new CustomEvent('bti:material-request-blocked', { detail: { message } }));
+                } catch (_e) {
+                    // no-op
+                }
+            }
             throw new Error(message);
         }
 
@@ -135,6 +151,9 @@
         },
         approveMaterialRequest(requestId) {
             return requestJson('POST', `/materials/requests/${encodeURIComponent(requestId)}/approve`, { auth: true });
+        },
+        rejectMaterialRequest(requestId) {
+            return requestJson('POST', `/materials/requests/${encodeURIComponent(requestId)}/reject`, { auth: true });
         }
     };
 })(window);

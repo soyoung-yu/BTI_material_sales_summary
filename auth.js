@@ -382,7 +382,9 @@
             .auth-modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,.45);display:none;align-items:center;justify-content:center;z-index:9999}
             .auth-modal-overlay.active{display:flex}
             .auth-modal{width:min(420px,92vw);background:#fff;border-radius:12px;padding:20px;box-shadow:0 12px 32px rgba(0,0,0,.18)}
-            .auth-modal h3{margin:0 0 12px;font-size:18px;color:#0f172a}
+            .auth-modal-header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
+            .auth-modal h3{margin:0;font-size:18px;color:#0f172a}
+            .auth-modal-close{border:1px solid #cbd5e1;background:#fff;color:#475569;border-radius:8px;width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;line-height:1}
             .auth-field{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
             .auth-field input{padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;font-size:14px}
             .auth-modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:8px}
@@ -395,7 +397,10 @@
         modal.className = 'auth-modal-overlay';
         modal.innerHTML = `
             <div class="auth-modal">
-                <h3>로그인</h3>
+                <div class="auth-modal-header">
+                    <h3>로그인</h3>
+                    <button type="button" class="auth-modal-close" id="authCloseBtn" aria-label="로그인 팝업 닫기">×</button>
+                </div>
                 <div class="auth-field">
                     <label for="authLoginId">아이디</label>
                     <input id="authLoginId" type="text" autocomplete="username">
@@ -413,10 +418,9 @@
         `;
         document.body.appendChild(modal);
 
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) closeLoginModal();
-        });
+        attachBackdropGuard(modal, 'active');
         document.getElementById('authCancelBtn').addEventListener('click', closeLoginModal);
+        document.getElementById('authCloseBtn').addEventListener('click', closeLoginModal);
         document.getElementById('authSubmitBtn').addEventListener('click', submitLogin);
         document.getElementById('authPassword').addEventListener('keydown', (e) => {
             if (e.key === 'Enter') submitLogin();
@@ -427,7 +431,10 @@
         pwModal.className = 'auth-modal-overlay';
         pwModal.innerHTML = `
             <div class="auth-modal">
-                <h3>비밀번호 변경</h3>
+                <div class="auth-modal-header">
+                    <h3>비밀번호 변경</h3>
+                    <button type="button" class="auth-modal-close" id="pwCloseBtn" aria-label="비밀번호 변경 팝업 닫기">×</button>
+                </div>
                 <div class="auth-field">
                     <label for="pwCurrent">현재 비밀번호</label>
                     <input id="pwCurrent" type="password" autocomplete="current-password">
@@ -444,13 +451,34 @@
             </div>
         `;
         document.body.appendChild(pwModal);
-        pwModal.addEventListener('click', (e) => {
-            if (e.target === pwModal) closePasswordModal();
-        });
+        attachBackdropGuard(pwModal, 'active');
         document.getElementById('pwCancelBtn').addEventListener('click', closePasswordModal);
+        document.getElementById('pwCloseBtn').addEventListener('click', closePasswordModal);
         document.getElementById('pwSubmitBtn').addEventListener('click', submitPasswordChange);
         document.getElementById('pwNext').addEventListener('keydown', (e) => {
             if (e.key === 'Enter') submitPasswordChange();
+        });
+    }
+
+    function attachBackdropGuard(overlayEl, activeClassName) {
+        if (!overlayEl) return;
+
+        ['mousedown', 'mouseup', 'click'].forEach(evtName => {
+            overlayEl.addEventListener(evtName, (e) => {
+                if (e.target !== overlayEl) return;
+                e.preventDefault();
+                e.stopPropagation();
+                if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+            }, true);
+        });
+
+        // Some previously attached listeners (or stale cached handlers) may still remove the class.
+        // Re-assert the open state on backdrop click so the modal stays open consistently.
+        overlayEl.addEventListener('click', (e) => {
+            if (e.target !== overlayEl) return;
+            setTimeout(() => {
+                if (overlayEl.isConnected) overlayEl.classList.add(activeClassName);
+            }, 0);
         });
     }
 
